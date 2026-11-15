@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Larius Terminal — Consultoria Patrimonial CVM 19</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              DEFAULT: '#050507',
+              card: '#0A0A0E',
+              elevated: '#111117',
+              border: 'rgba(255,255,255,0.07)'
+            },
+            amber: {
+              accent: '#FF6B00',
+              glow: 'rgba(255, 107, 0, 0.14)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-obsidian: #050507;
+      --surface-card: #0a0a0e;
+      --accent-amber: #ff6b00;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      background-color: var(--bg-obsidian);
+      color: #f5f5f7;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    ::selection {
+      background: rgba(255, 107, 0, 0.25);
+      color: #ffffff;
+    }
+
+    .spotlight-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      background-color: #0A0A0E;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+      will-change: transform;
+    }
+    .spotlight-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .spotlight-card:active {
+      transform: scale(0.985);
+    }
+    .spotlight-card.active {
+      border-color: rgba(255, 107, 0, 0.5);
+      box-shadow: 0 0 40px -15px rgba(255, 107, 0, 0.3);
+    }
+
+    .spotlight-card::before {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: -1px;
+      opacity: var(--spot-opacity, 0);
+      transition: opacity 0.5s ease;
+      background: radial-gradient(
+        420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+        var(--spot-color, rgba(255, 107, 0, 0.14)),
+        transparent 75%
+      );
+      z-index: 1;
+    }
+    .spotlight-card.active::before {
+      opacity: 0.85;
+    }
+    .spotlight-card > * {
+      position: relative;
+      z-index: 10;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #86868b;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .nav-link:hover {
+      color: #f5f5f7;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .nav-link.active {
+      color: #ffffff;
+      background: linear-gradient(90deg, rgba(255, 107, 0, 0.14) 0%, rgba(255, 107, 0, 0.02) 100%);
+      border-color: rgba(255, 107, 0, 0.35);
+      box-shadow: 0 8px 24px -8px rgba(255, 107, 0, 0.25);
+    }
+
+    .seg-tab {
+      padding: 6px 13px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #86868b;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .seg-tab:hover {
+      color: #f5f5f7;
+    }
+    .seg-tab.active {
+      background: #14141b;
+      color: #ffffff;
+      border-color: rgba(255, 107, 0, 0.45);
+      box-shadow: 0 0 25px -8px rgba(255, 107, 0, 0.35);
+    }
+
+    .typing-cursor::after {
+      content: "▋";
+      display: inline-block;
+      margin-left: 3px;
+      color: #FF6B00;
+      animation: blink 0.75s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #050507; }
+    ::-webkit-scrollbar-thumb { background: #1c1c24; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2c2c38; }
+  </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden select-none relative bg-[#050507]">
+
+  <!-- ==================== MOTIONSITES (DATA-SIGNAL + IRIS-ASSISTANT) AMBIENT LAYER ==================== -->
+  <video
+    autoplay
+    muted
+    loop
+    playsinline
+    disablepictureinpicture
+    aria-hidden="true"
+    class="pointer-events-none fixed inset-0 w-full h-full object-cover opacity-[0.13] z-0"
+  >
+    <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260808_064556_051587f1-74a1-4336-8c05-4dde3594ed05.mp4" type="video/mp4">
+  </video>
+  <div
+    class="pointer-events-none fixed inset-0 z-0"
+    style="background: radial-gradient(680px circle at 54% 0%, rgba(255,107,0,0.13), rgba(56,189,248,0.05) 45%, transparent 75%), linear-gradient(180deg, rgba(5,5,7,0.45), rgba(5,5,7,0.92));"
+  ></div>
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <aside class="w-64 bg-[#07070A]/95 backdrop-blur-xl border-r border-white/[0.07] flex flex-col justify-between p-4 z-30 shrink-0">
+    <div class="space-y-5">
+      <div class="flex items-center justify-between px-1.5 pt-1">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#FF6B00] flex items-center justify-center text-[#050507] font-extrabold text-sm shadow-[0_0_25px_rgba(255,107,0,0.45)] relative overflow-hidden">
+            <svg viewBox="0 0 25 25" class="w-5 h-5" fill="none">
+              <path d="M12.5 2L22 12.5L12.5 23L3 12.5L12.5 2Z" fill="#050507" />
+              <path d="M12.5 6L18.5 12.5L12.5 19L6.5 12.5L12.5 6Z" fill="#FF6B00" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-white tracking-tight leading-none">Larius Terminal</div>
+            <div class="text-[10px] text-zinc-400 mt-1 font-mono">MotionSites • Python 3.12</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">24/7 Cloud</span>
+      </div>
+
+      <div class="relative">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input 
+          id="global-search"
+          type="text"
+          oninput="handleSearch(this.value)"
+          placeholder="Filtrar código (ex: WEGE3)..."
+          class="w-full bg-[#0A0A0E] border border-white/[0.07] rounded-xl pl-8 pr-9 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[#FF6B00]/50 transition"
+        />
+        <kbd class="text-[10px] font-mono text-zinc-600 absolute right-2.5 top-1/2 -translate-y-1/2">⌘K</kbd>
+      </div>
+
+      <div class="space-y-1">
+        <div class="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">Terminal</div>
+
+        <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-link active">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Visão Geral & Gráficos</span>
+          </span>
+          <span class="text-[10px] font-mono text-[#FF6B00]">Ao Vivo</span>
+        </button>
+
+        <button onclick="switchView('stocks')" id="nav-stocks" class="nav-link">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+            <span>Ações & Gerador (24)</span>
+          </span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-zinc-300">Top 16</span>
+        </button>
+
+        <button onclick="switchView('compound')" id="nav-compound" class="nav-link">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="calculator" class="w-4 h-4"></i>
+            <span>Juros, IR & Bancos</span>
+          </span>
+        </button>
+
+        <button onclick="switchView('brokers')" id="nav-brokers" class="nav-link">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="landmark" class="w-4 h-4"></i>
+            <span>Corretoras & Taxas</span>
+          </span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">Taxa R$ 0</span>
+        </button>
+
+        <button onclick="switchView('larius')" id="nav-larius" class="nav-link">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="mic" class="w-4 h-4 text-[#FF6B00]"></i>
+            <span>Larius (Voz & Palco 3D)</span>
+          </span>
+          <span class="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse"></span>
+        </button>
+
+        <button onclick="switchView('python')" id="nav-python" class="nav-link">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="terminal" class="w-4 h-4 text-sky-400"></i>
+            <span>Motor Python Quant</span>
+          </span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400">Py 3.12</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-3 pt-3 border-t border-white/[0.07]">
+      <div class="spotlight-card p-3.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></span>
+            Consultor Larius
+          </span>
+          <span class="text-[10px] font-mono text-zinc-500">Voz Natural</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 leading-relaxed">
+          Demonstração visual de ativos, impostos e corretoras enquanto conversa com você.
+        </p>
+        <button onclick="switchView('larius')" class="w-full py-2 px-3 rounded-xl bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,107,0,0.3)]">
+          <i data-lucide="audio-waveform" class="w-3.5 h-3.5"></i>
+          <span>Abrir Larius 3D</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between px-1 text-[11px] text-zinc-500 tabular-nums font-mono">
+        <span>SELIC <strong class="text-zinc-200">13,75%</strong></span>
+        <span>USD <strong class="text-emerald-400">R$ 5,50</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN VIEWPORT ==================== -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#050507]">
+
+    <header class="h-14 px-8 flex items-center justify-between border-b border-white/[0.07] bg-[#050507]/90 backdrop-blur-md z-20 shrink-0">
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-zinc-500">Terminal</span>
+        <span class="text-zinc-700">/</span>
+        <span id="breadcrumb-title" class="text-white font-medium">Visão Geral & Gráficos Interativos</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a
+          href="https://github.com/victorvolkart100-code/larius-terminal"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-[11px] font-mono text-emerald-400 transition"
+          title="Hospedado no GitHub Cloud — Funciona 24/7 mesmo com seu PC desligado"
+        >
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>GitHub Cloud 24/7 • Online</span>
+        </a>
+
+        <div class="hidden xl:flex items-center gap-4 px-3.5 py-1.5 rounded-xl bg-[#0A0A0E] border border-white/[0.07] text-xs font-mono tabular-nums">
+          <span class="text-zinc-400">SELIC: <strong class="text-white">13,75% a.a.</strong> <span class="text-[10px] text-zinc-500">(Corte Mar/27)</span></span>
+          <span class="text-zinc-800">|</span>
+          <span class="text-zinc-400">IPCA: <strong class="text-[#FF6B00]">5,22%</strong></span>
+          <span class="text-zinc-800">|</span>
+          <span class="text-zinc-400">DÓLAR: <strong class="text-emerald-400">R$ 5,50</strong></span>
+          <span class="text-zinc-800">|</span>
+          <span class="text-zinc-400">DBGG/PIB: <strong class="text-rose-400">82,4%</strong></span>
+        </div>
+
+        <button onclick="switchView('python')" class="px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-xs text-sky-300 font-mono flex items-center gap-1.5 transition">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span>Python 3.12</span>
+        </button>
+
+        <button onclick="openVoiceCloneModal()" class="px-3 py-1.5 rounded-xl bg-[#0A0A0E] hover:bg-white/[0.06] border border-white/[0.09] text-xs text-zinc-300 flex items-center gap-1.5 transition">
+          <i data-lucide="sliders" class="w-3.5 h-3.5 text-[#FF6B00]"></i>
+          <span>Calibrar Voz Larius</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="lenis-wrapper" class="flex-1 overflow-y-auto px-8 py-6">
+      <div id="lenis-content" class="max-w-[1440px] mx-auto space-y-6 pb-10">
+
+        <section id="view-dashboard" class="space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div id="home-larius-spotlight" class="lg:col-span-5 spotlight-card active p-5 flex flex-col justify-between space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.07] pb-3">
+                <div>
+                  <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-[#FF6B00]">
+                    &lt;LariusCore3D isSpeaking={<span id="home-prop-val">true</span>} /&gt;
+                  </span>
+                  <h2 class="text-sm font-semibold text-white mt-0.5">
+                    Núcleo Holográfico Larius 3D
+                  </h2>
+                  <p class="text-[11px] text-zinc-400">
+                    Shader GLSL reativo à voz (<code class="text-[#FF6B00]">uAudioEnergy</code>) + Anéis Giroscópicos
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    id="btn-toggle-speaking"
+                    onclick="toggleHomeIsSpeaking()"
+                    class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all border bg-[#FF6B00] text-[#050507] border-[#FF6B00] shadow-[0_0_20px_rgba(255,107,0,0.4)]"
+                  >
+                    <span id="btn-speaking-dot" class="h-2 w-2 rounded-full bg-[#050507] animate-ping"></span>
+                    <span id="btn-speaking-label">isSpeaking: true</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="relative h-[430px] w-full rounded-2xl overflow-hidden bg-[#050507] border border-white/[0.06]">
+                <canvas id="homeLariusCoreCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+                <div class="pointer-events-none absolute top-3 left-3 flex items-center gap-2 text-[10px] font-mono tabular-nums text-zinc-400">
+                  <span class="px-2 py-1 rounded-lg bg-[#0A0A0E]/85 border border-white/[0.07]">
+                    uAudioEnergy: <strong id="hud-audio-energy" class="text-[#FF6B00]">0.42</strong>
+                  </span>
+                  <button
+                    onclick="connectMicToAnalyzer()"
+                    class="pointer-events-auto px-2 py-1 rounded-lg bg-[#0A0A0E]/90 hover:bg-white/[0.08] border border-white/[0.1] text-zinc-300 transition"
+                  >
+                    🎙️ <span id="btn-mic-analyzer-lbl">FFT 256</span>
+                  </button>
+                </div>
+
+                <div class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0A0A0E]/80 px-3.5 py-1 backdrop-blur-md">
+                  <span id="home-core-status-dot" class="h-1.5 w-1.5 rounded-full animate-ping bg-[#FF6B00]"></span>
+                  <span id="home-core-status-text" class="text-[11px] font-medium tracking-[0.2em] text-zinc-400 uppercase">
+                    LARIUS // TRANSMITINDO
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div id="portfolio-diagram-spotlight" class="lg:col-span-7 spotlight-card p-5 flex flex-col justify-between space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.07] pb-3">
+                <div>
+                  <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-[#FF6B00]">
+                    &lt;PortfolioDiagram3D tier="<span id="portfolio-tier-prop">beginner</span>" /&gt; • GSAP CameraRig
+                  </span>
+                  <h2 class="text-sm font-semibold text-white mt-0.5">
+                    Diagrama Espacial 3D da Carteira (Clique nas Barras 3D)
+                  </h2>
+                  <p class="text-[11px] text-zinc-400">
+                    Clique em qualquer barra da carteira para deslizar a câmera com GSAP e alterne a profundidade técnica:
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <div class="inline-flex items-center rounded-xl border border-white/[0.08] bg-[#050507] p-1">
+                    <button
+                      id="tier-btn-beginner"
+                      onclick="setPortfolioTier('beginner')"
+                      class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all bg-[#FF6B00] text-[#050507] shadow-[0_0_16px_rgba(255,107,0,0.35)]"
+                    >
+                      Iniciante
+                    </button>
+                    <button
+                      id="tier-btn-intermediate"
+                      onclick="setPortfolioTier('intermediate')"
+                      class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all text-zinc-400 hover:text-zinc-200"
+                    >
+                      Intermediário
+                    </button>
+                    <button
+                      id="tier-btn-senior"
+                      onclick="setPortfolioTier('senior')"
+                      class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all text-zinc-400 hover:text-zinc-200"
+                    >
+                      Sênior
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="portfolio3d-container" class="relative h-[430px] w-full overflow-hidden rounded-2xl bg-[#050507] border border-white/[0.06]">
+                <canvas id="portfolioDiagram3dCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+                <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                  <div class="flex items-center gap-1.5 flex-wrap pointer-events-auto">
+                    <button onclick="focusPortfolioAsset('tesouro_selic')" id="pill-btn-tesouro_selic" class="px-2.5 py-1 rounded-lg bg-[#0A0A0E]/90 hover:border-emerald-400 border border-white/10 text-[10px] font-mono text-zinc-200 transition">
+                      ● LFT / Selic (40%)
+                    </button>
+                    <button onclick="focusPortfolioAsset('utilities_b3')" id="pill-btn-utilities_b3" class="px-2.5 py-1 rounded-lg bg-[#0A0A0E]/90 hover:border-[#FF6B00] border border-white/10 text-[10px] font-mono text-zinc-200 transition">
+                      ● EGIE3 / TAEE11 (25%)
+                    </button>
+                    <button onclick="focusPortfolioAsset('fiis_tijolo')" id="pill-btn-fiis_tijolo" class="px-2.5 py-1 rounded-lg bg-[#0A0A0E]/90 hover:border-amber-400 border border-white/10 text-[10px] font-mono text-zinc-200 transition">
+                      ● HGLG11 / KNCR11 (20%)
+                    </button>
+                    <button onclick="focusPortfolioAsset('exporters_b3')" id="pill-btn-exporters_b3" class="px-2.5 py-1 rounded-lg bg-[#0A0A0E]/90 hover:border-sky-400 border border-white/10 text-[10px] font-mono text-zinc-200 transition">
+                      ● VALE3 / WEGE3 (15%)
+                    </button>
+                  </div>
+
+                  <button
+                    id="btn-reset-portfolio-cam"
+                    onclick="focusPortfolioAsset(null)"
+                    class="hidden pointer-events-auto px-2.5 py-1 rounded-lg bg-[#FF6B00] text-[#050507] font-mono font-semibold text-[10px] shadow-lg transition"
+                  >
+                    Visão Panorâmica ↺
+                  </button>
+                </div>
+
+                <div id="portfolio3d-html-layer" class="pointer-events-none absolute inset-0 overflow-hidden"></div>
+
+                <div class="pointer-events-none absolute bottom-3 left-4 flex items-center gap-3 text-[10px] tracking-widest text-zinc-500 uppercase font-mono">
+                  <span>EIXO X: RISCO / BETA</span>
+                  <span>•</span>
+                  <span>ALTURA: ALOCAÇÃO (%)</span>
+                  <span id="senior-matrix-badge" class="hidden text-[#FF6B00]">• MATRIZ QUANTITATIVA ATIVA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div onclick="selectDashboardMetric('CARTEIRA_VS_CDI', this)" class="spotlight-card active p-5 cursor-pointer kpi-selector">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-medium text-zinc-400">Rentabilidade Projetada (Aegis)</span>
+                <span class="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ↗ +24,6% a.a.
+                </span>
+              </div>
+              <div class="text-2xl font-bold font-mono tabular-nums text-white">+179% <span class="text-xs font-normal text-zinc-500">do CDI Líquido</span></div>
+              <div class="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-zinc-500">
+                <span>Dividend Yield médio: <strong class="text-zinc-300 tabular-nums">9,4% Isento</strong></span>
+                <span class="text-[#FF6B00]">Ativo no gráfico →</span>
+              </div>
+            </div>
+
+            <div onclick="selectDashboardMetric('SELIC_CURVE', this)" class="spotlight-card p-5 cursor-pointer kpi-selector">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-medium text-zinc-400">Taxa Selic & Juro Real</span>
+                <span class="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md bg-[#FF6B00]/15 text-[#FF6B00] border border-[#FF6B00]/30">
+                  Corte Mar/2027
+                </span>
+              </div>
+              <div class="text-2xl font-bold font-mono tabular-nums text-white">13,75% <span class="text-xs font-normal text-zinc-500">Juro Real 8,1%</span></div>
+              <div class="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-zinc-500">
+                <span>Favorece <strong class="text-zinc-300">ITUB4, BBSE3, KNCR11</strong></span>
+                <span>Ver curva →</span>
+              </div>
+            </div>
+
+            <div onclick="selectDashboardMetric('EXPORT_ROUTES', this)" class="spotlight-card p-5 cursor-pointer kpi-selector">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-medium text-zinc-400">Câmbio & Receita Exportadora</span>
+                <span class="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ↗ +28,4% Upside
+                </span>
+              </div>
+              <div class="text-2xl font-bold font-mono tabular-nums text-white">R$ 5,50 <span class="text-xs font-normal text-zinc-500">Faixa 5,35–5,65</span></div>
+              <div class="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-zinc-500">
+                <span>Impulsiona <strong class="text-zinc-300">WEGE3, PRIO3, EMBR3</strong></span>
+                <span>Comparar →</span>
+              </div>
+            </div>
+
+            <div onclick="selectDashboardMetric('INFLATION_SHIELD', this)" class="spotlight-card p-5 cursor-pointer kpi-selector">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-medium text-zinc-400">Inflação IPCA & Risco Fiscal</span>
+                <span class="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  Dívida 82,4% PIB
+                </span>
+              </div>
+              <div class="text-2xl font-bold font-mono tabular-nums text-white">5,22% <span class="text-xs font-normal text-zinc-500">2027: 4,90%</span></div>
+              <div class="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-zinc-500">
+                <span>Proteção <strong class="text-zinc-300">SBSP3, EGIE3, KNIP11</strong></span>
+                <span>Ver repasse →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-8 spotlight-card p-6 flex flex-col justify-between space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#FF6B00]"></span>
+                    <h2 id="main-chart-heading" class="text-sm font-semibold text-white">Desempenho Comparativo: Carteira Larius vs. CDI Líquido vs. Varejo</h2>
+                  </div>
+                  <p id="main-chart-sub" class="text-xs text-zinc-500 mt-0.5">
+                    Passe o mouse sobre os pontos ou troque o ativo/período para inspecionar os números exatos
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                  <select id="chart-asset-compare" onchange="refreshMainDashboardChart()" class="bg-[#050507] border border-white/[0.1] rounded-xl px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-[#FF6B00]">
+                    <option value="CARTEIRA_VS_CDI">Carteira Larius vs. CDI vs. Varejo</option>
+                    <option value="TOP_STOCKS_COMPARE">SBSP3 vs. WEGE3 vs. ITUB4</option>
+                    <option value="SELIC_CURVE">Curva Selic (13,75% → Cortes 2027) vs. FIIs</option>
+                    <option value="EXPORT_ROUTES">Exportadoras em Dólar vs. Ibovespa</option>
+                    <option value="INFLATION_SHIELD">Concessões IPCA+ vs. Inflação</option>
+                  </select>
+
+                  <div class="flex items-center bg-[#050507] p-1 rounded-xl border border-white/[0.07]">
+                    <button onclick="setMainChartPeriod('6M')" id="mcp-6M" class="seg-tab py-1 px-2.5">6M</button>
+                    <button onclick="setMainChartPeriod('1Y')" id="mcp-1Y" class="seg-tab active py-1 px-2.5">12M</button>
+                    <button onclick="setMainChartPeriod('2Y')" id="mcp-2Y" class="seg-tab py-1 px-2.5">24M</button>
+                    <button onclick="setMainChartPeriod('5Y')" id="mcp-5Y" class="seg-tab py-1 px-2.5">5A</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="main-chart-telemetry" class="grid grid-cols-3 gap-3 p-3 rounded-xl bg-[#050507] border border-white/[0.06] font-mono tabular-nums text-xs">
+                <div>
+                  <span class="text-zinc-500 block text-[10px]">Série Principal</span>
+                  <strong id="tel-s1" class="text-[#FF6B00]">Carteira Larius: +24,6%</strong>
+                </div>
+                <div>
+                  <span class="text-zinc-500 block text-[10px]">Referência / Benchmark</span>
+                  <strong id="tel-s2" class="text-emerald-400">CDI Líquido IR: +11,6%</strong>
+                </div>
+                <div>
+                  <span class="text-zinc-500 block text-[10px]">Setor Evitado (Juros 13,75%)</span>
+                  <strong id="tel-s3" class="text-rose-400">Varejo Alavancado: -18,4%</strong>
+                </div>
+              </div>
+
+              <div class="h-64 w-full">
+                <canvas id="primaryInteractiveChart"></canvas>
+              </div>
+            </div>
+
+            <div class="lg:col-span-4 spotlight-card p-6 flex flex-col justify-between space-y-4">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h2 class="text-sm font-semibold text-white">Mapa Risco × Retorno (Bolhas)</h2>
+                  <span class="text-[10px] font-mono text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.5 rounded border border-[#FF6B00]/25">Clique na Bolha</span>
+                </div>
+                <p class="text-xs text-zinc-500 mt-0.5">
+                  Eixo X: Dividend Yield (%) • Eixo Y: Potencial de Alta (Upside %)
+                </p>
+              </div>
+
+              <div class="h-56 w-full">
+                <canvas id="bubbleMatrixChart"></canvas>
+              </div>
+
+              <div id="bubble-selected-info" class="p-3 rounded-xl bg-[#050507] border border-white/[0.06] text-xs flex items-center justify-between">
+                <div>
+                  <span class="font-mono font-bold text-white">ITUB4</span>
+                  <span class="text-zinc-400 ml-1.5">DY 8,6% • Alta +22,3%</span>
+                </div>
+                <button onclick="openAssetInspector('ITUB4')" class="text-[#FF6B00] hover:underline font-medium">Raio-X →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-5 spotlight-card p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-[10px] font-mono uppercase tracking-wider text-[#FF6B00]">Corredores de Receita em Moeda Forte (Dólar R$ 5,50)</div>
+                  <h3 class="text-sm font-semibold text-white mt-0.5">De Onde Vem o Lucro Internacional da Carteira</h3>
+                </div>
+                <span class="text-[11px] font-mono text-zinc-500">6 Rotas Ativas</span>
+              </div>
+
+              <div id="corridors-list" class="space-y-2.5"></div>
+            </div>
+
+            <div class="lg:col-span-7 spotlight-card p-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-1 bg-[#050507] p-1 rounded-xl border border-white/[0.07] overflow-x-auto">
+                  <button onclick="setDashboardTableTab('AI_TOP')" id="dtab-AI_TOP" class="seg-tab active">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-[#FF6B00]"></i>
+                    <span>Recomendadas IA (8)</span>
+                  </button>
+                  <button onclick="setDashboardTableTab('BULL')" id="dtab-BULL" class="seg-tab">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Em Alta (16)</span>
+                  </button>
+                  <button onclick="setDashboardTableTab('BEAR')" id="dtab-BEAR" class="seg-tab">
+                    <i data-lucide="trending-down" class="w-3.5 h-3.5 text-rose-400"></i>
+                    <span>Em Queda / Evitar (4)</span>
+                  </button>
+                  <button onclick="setDashboardTableTab('FII')" id="dtab-FII" class="seg-tab">
+                    <i data-lucide="building-2" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>FIIs (6)</span>
+                  </button>
+                </div>
+                <button onclick="switchView('stocks')" class="text-xs text-zinc-400 hover:text-white">Abrir Gerador IA →</button>
+              </div>
+
+              <div class="overflow-x-auto max-h-[340px]">
+                <table class="w-full text-left border-collapse tabular-nums">
+                  <thead class="sticky top-0 bg-[#0A0A0E] z-10">
+                    <tr class="border-b border-white/[0.07] text-[11px] text-zinc-500 font-medium">
+                      <th class="pb-2.5 pl-2">Ativo</th>
+                      <th class="pb-2.5">Setor / Tese</th>
+                      <th class="pb-2.5 text-right">Preço</th>
+                      <th class="pb-2.5 text-right">Alvo</th>
+                      <th class="pb-2.5 text-right">Upside</th>
+                      <th class="pb-2.5 text-right">DY</th>
+                      <th class="pb-2.5 text-right pr-2">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-table-rows" class="divide-y divide-white/[0.04] text-xs"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-stocks" class="hidden space-y-6">
+          <div class="spotlight-card p-6 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div class="text-[11px] font-mono uppercase tracking-wider text-[#FF6B00]">Filtro Fundamentalista CVM 19 • 24 Ativos Analisados</div>
+                <h2 class="text-lg font-semibold text-white mt-0.5">Gerador de Recomendações Sob Medida</h2>
+                <p class="text-xs text-zinc-400">Personalize os filtros abaixo para gerar sua carteira ideal de ações estáveis e com prospecção de alta:</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="applyStockFilters('STARTER')" class="px-3.5 py-2 rounded-xl bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs transition">
+                  ★ Kit Iniciante (Mais Seguras)
+                </button>
+                <button onclick="applyStockFilters('ALL')" class="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium text-xs transition">
+                  Ver Todas (24)
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">1. Foco da Estratégia</label>
+                <select id="flt-goal" onchange="renderFullStocksGrid()" class="w-full bg-[#050507] text-xs text-white font-medium focus:outline-none">
+                  <option value="ALL">Todas as Recomendadas (Estabilidade + Alta)</option>
+                  <option value="SELIC">Ganhadoras com Selic em 13,75% (Bancos/Seguros/CDI)</option>
+                  <option value="IPCA">Blindagem Inflação IPCA 5,22% (Saneamento/Energia)</option>
+                  <option value="DOLLAR">Receita em Dólar R$ 5,50 (Exportadoras Globais)</option>
+                  <option value="FII">Apenas Fundos Imobiliários (Renda Mensal Isenta)</option>
+                  <option value="AVOID">Em Queda / Evitar (Varejo & Endividadas)</option>
+                </select>
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">2. Dividend Yield Mínimo</label>
+                <select id="flt-dy" onchange="renderFullStocksGrid()" class="w-full bg-[#050507] text-xs text-white font-medium focus:outline-none">
+                  <option value="0">Qualquer Dividend Yield (Foco em Crescimento + Renda)</option>
+                  <option value="7">Acima de 7,0% ao ano (Viver de Renda)</option>
+                  <option value="9">Acima de 9,0% ao ano (Super Pagadoras)</option>
+                </select>
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">3. Ordenar Por</label>
+                <select id="flt-sort" onchange="renderFullStocksGrid()" class="w-full bg-[#050507] text-xs text-white font-medium focus:outline-none">
+                  <option value="score">Maior Score de Qualidade Larius</option>
+                  <option value="upside">Maior Potencial de Alta (Upside %)</option>
+                  <option value="dy">Maior Dividend Yield (%)</option>
+                  <option value="pl">Mais Baratas (Menor P/L ou P/VP)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="full-stocks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <section id="view-compound" class="hidden space-y-6">
+          <div class="spotlight-card p-6 space-y-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div class="text-[11px] font-mono uppercase tracking-wider text-[#FF6B00]">Simulador Patrimonial Líquido</div>
+                <h2 class="text-lg font-semibold text-white mt-0.5">Juros Compostos + Imposto de Renda Regressivo + Comparação contra Bancos</h2>
+                <p class="text-xs text-zinc-400">Veja quanto dinheiro você deixa na mesa ao investir em CDBs de grandes bancos tributados pelo IR vs. Carteira Larius Isenta:</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Aporte Inicial (R$)</label>
+                <input id="sim-init" type="number" value="10000" step="1000" oninput="updateCompoundSimulator()" class="w-full bg-transparent text-base font-mono tabular-nums font-bold text-white focus:outline-none" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Aporte Mensal (R$)</label>
+                <input id="sim-month" type="number" value="1000" step="100" oninput="updateCompoundSimulator()" class="w-full bg-transparent text-base font-mono tabular-nums font-bold text-white focus:outline-none" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Horizonte: <span id="sim-yr-label" class="text-[#FF6B00] font-mono">10 anos</span></label>
+                <input id="sim-years" type="range" min="1" max="25" value="10" oninput="updateCompoundSimulator()" class="w-full accent-[#FF6B00] cursor-pointer mt-2" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Taxa Carteira (% a.a.)</label>
+                <input id="sim-rate" type="number" value="16.2" step="0.5" oninput="updateCompoundSimulator()" class="w-full bg-transparent text-base font-mono tabular-nums font-bold text-emerald-400 focus:outline-none" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Reinvestir Dividendos?</label>
+                <select id="sim-reinvest" onchange="updateCompoundSimulator()" class="w-full bg-[#050507] text-xs font-semibold text-white focus:outline-none pt-1">
+                  <option value="yes" selected>Sim (Juros Compostos)</option>
+                  <option value="no">Não (Sacar Mensalmente)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 tabular-nums">
+              <div class="p-4 rounded-xl bg-[#050507] border border-[#FF6B00]/40 space-y-1">
+                <div class="text-[11px] text-zinc-400">1. Carteira Larius (Dividendos Isentos)</div>
+                <div id="out-larius" class="text-xl font-mono font-bold text-white">R$ 321.922</div>
+                <div class="text-[11px] text-emerald-400 font-mono">IR sobre Dividendos: R$ 0 (Isento)</div>
+              </div>
+              <div class="p-4 rounded-xl bg-[#050507] border border-white/[0.07] space-y-1">
+                <div class="text-[11px] text-zinc-400">2. CDB 100% CDI (C6 / Inter / Itaú)</div>
+                <div id="out-cdb100" class="text-xl font-mono font-bold text-zinc-200">R$ 237.008</div>
+                <div id="out-cdb100-ir" class="text-[11px] text-rose-400 font-mono">-R$ 18.884 retidos de IR (15%)</div>
+              </div>
+              <div class="p-4 rounded-xl bg-[#050507] border border-white/[0.07] space-y-1">
+                <div class="text-[11px] text-zinc-400">3. Banco Tradicional (85% CDI Líq.)</div>
+                <div id="out-bank85" class="text-xl font-mono font-bold text-zinc-300">R$ 209.270</div>
+                <div class="text-[11px] text-rose-400 font-mono">Penalizado por IR + Taxa Adm.</div>
+              </div>
+              <div class="p-4 rounded-xl bg-[#050507] border border-white/[0.07] space-y-1">
+                <div class="text-[11px] text-zinc-400">4. Poupança Bancária</div>
+                <div id="out-poup" class="text-xl font-mono font-bold text-zinc-400">R$ 195.039</div>
+                <div id="out-advantage" class="text-[11px] text-[#FF6B00] font-mono">Ganho Extra Larius: +R$ 112.652</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+              <div class="lg:col-span-8 h-72">
+                <canvas id="compoundCurveChart"></canvas>
+              </div>
+              <div id="compound-summary-box" class="lg:col-span-4 space-y-3 text-xs flex flex-col justify-center"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-brokers" class="hidden space-y-6">
+          <div class="spotlight-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="text-[11px] font-mono uppercase tracking-wider text-[#FF6B00]">Guia Prático para Pessoas Leigas</div>
+              <h2 class="text-lg font-semibold text-white mt-0.5">Custos e Taxas de Bancos e Corretoras Confiáveis</h2>
+              <p class="text-xs text-zinc-400">Clique em qualquer instituição abaixo para ver a estrutura de taxas, nota de facilidade do aplicativo e o veredito do Larius:</p>
+            </div>
+            <div class="flex items-center gap-1 bg-[#050507] p-1 rounded-xl border border-white/[0.07]">
+              <button onclick="renderBrokers('ALL')" id="brk-ALL" class="seg-tab active">Todas (8)</button>
+              <button onclick="renderBrokers('ZERO')" id="brk-ZERO" class="seg-tab">Corretagem R$ 0 (6)</button>
+            </div>
+          </div>
+
+          <div id="brokers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+          <div id="broker-detail-card" class="spotlight-card p-6"></div>
+        </section>
+
+        <section id="view-larius" class="hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-120px)] min-h-[580px]">
+            <div class="lg:col-span-7 spotlight-card flex flex-col justify-between p-6 relative overflow-hidden">
+              <canvas id="larius3dCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+
+              <div class="relative z-10 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-2 h-2 rounded-full bg-[#FF6B00] animate-ping"></span>
+                  <span class="font-mono text-xs text-zinc-200 tracking-wider">LARIUS • PALCO DE DEMONSTRAÇÃO 3D</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="openVoiceCloneModal()" class="px-3 py-1.5 rounded-xl bg-[#FF6B00]/15 hover:bg-[#FF6B00]/25 border border-[#FF6B00]/40 text-xs font-medium text-[#FF6B00] flex items-center gap-1.5">
+                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                    <span id="larius-voice-badge">Clonar Minha Voz</span>
+                  </button>
+                  <button onclick="toggleLariusMute()" class="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-zinc-300">
+                    <span id="larius-mute-lbl">🔊 Voz Ativa</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="larius-demo-overlay" class="relative z-10 my-auto max-w-lg mx-auto w-full"></div>
+
+              <div class="relative z-10 flex flex-col items-center gap-2">
+                <div class="flex items-center gap-3">
+                  <button onclick="listenToUserMic()" id="btn-larius-mic" class="px-5 py-2.5 rounded-full bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs flex items-center gap-2 shadow-[0_0_30px_rgba(255,107,0,0.4)] transition">
+                    <i data-lucide="mic" class="w-4 h-4"></i>
+                    <span id="larius-mic-text">Falar com Larius pelo Microfone</span>
+                  </button>
+                  <button onclick="stopLariusSpeech()" class="px-3.5 py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs text-zinc-300">
+                    Pausar Voz
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg:col-span-5 spotlight-card flex flex-col justify-between overflow-hidden">
+              <div class="p-4 border-b border-white/[0.07] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-[#FF6B00]/15 border border-[#FF6B00]/40 flex items-center justify-center font-bold text-sm text-[#FF6B00]">
+                    L
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-white">Larius • Consultor de Investimentos</h3>
+                    <p class="text-[11px] text-zinc-500">Escrita fluida humana + Demonstração visual ao lado</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="larius-messages" class="flex-1 overflow-y-auto p-5 space-y-4 text-xs leading-relaxed">
+                <div class="p-4 rounded-2xl bg-[#050507] border border-white/[0.07] text-zinc-200 space-y-2">
+                  <div class="text-[11px] font-semibold text-[#FF6B00]">Larius • Especialista CVM 19</div>
+                  <p>
+                    Olá! Eu sou o <strong>Larius</strong>. Sempre que você me perguntar sobre uma ação, sobre o efeito dos juros compostos e do Imposto de Renda, ou sobre qual banco escolher, eu projeto os dados na tela 3D ao lado enquanto converso com você.
+                  </p>
+                </div>
+              </div>
+
+              <div class="p-4 border-t border-white/[0.07] bg-[#050507] space-y-3">
+                <div class="flex flex-wrap gap-1.5">
+                  <button onclick="askLarius('Larius, me mostre na tela as melhores ações estáveis e com alta para começar hoje!')" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-zinc-300 border border-white/[0.07] transition">
+                    📊 Top Ações Estáveis + Alta
+                  </button>
+                  <button onclick="askLarius('Larius, compare os bancos (Íon Itaú, C6, Inter, XP) e me diga onde não pago taxas.')" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-zinc-300 border border-white/[0.07] transition">
+                    🏦 Comparar Bancos & Taxas
+                  </button>
+                  <button onclick="askLarius('Larius, demonstre como o Imposto de Renda e os juros compostos funcionam na carteira vs CDB.')" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-zinc-300 border border-white/[0.07] transition">
+                    💰 Juros Compostos & IR
+                  </button>
+                </div>
+
+                <form onsubmit="submitLariusChat(event)" class="flex items-center gap-2">
+                  <input id="larius-input" type="text" placeholder="Pergunte ao Larius..." class="flex-1 bg-[#0A0A0E] border border-white/[0.09] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF6B00]" />
+                  <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs transition shrink-0">
+                    Enviar
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-python" class="hidden space-y-6">
+          <div class="spotlight-card active p-6 space-y-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-sky-400">
+                    LARIUS_QUANT_ENGINE.PY • PYTHON 3.12 + PYODIDE WEBASSEMBLY • GITHUB CLOUD 24/7
+                  </span>
+                </div>
+                <h2 class="text-lg font-semibold text-white mt-0.5">
+                  Motor Quantitativo em Python & Hospedagem 24/7 no GitHub
+                </h2>
+                <p class="text-xs text-zinc-400">
+                  O cérebro matemático do Larius foi reescrito em <strong>Python 3.12</strong> (<code class="text-sky-400">larius_quant_engine.py</code>) para cálculo institucional de Índice de Sharpe, Beta, Markowitz e Imposto de Renda Regressivo, executando 24/7 na nuvem via GitHub Pages + Pyodide WASM mesmo com seu computador desligado.
+                </p>
+              </div>
+
+              <div class="flex items-center gap-2.5 shrink-0">
+                <button
+                  onclick="runPythonQuantEngine()"
+                  id="btn-run-python"
+                  class="px-4 py-2.5 rounded-xl bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs transition flex items-center gap-2 shadow-[0_0_25px_rgba(255,107,0,0.4)]"
+                >
+                  <i data-lucide="play" class="w-4 h-4"></i>
+                  <span id="btn-run-python-lbl">Executar larius_quant_engine.py</span>
+                </button>
+                <a
+                  href="https://github.com/victorvolkart100-code/larius-terminal"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="px-3.5 py-2.5 rounded-xl bg-[#050507] hover:bg-white/[0.06] border border-white/[0.12] text-xs font-mono text-zinc-200 flex items-center gap-1.5 transition"
+                >
+                  <span>Repositório GitHub ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Perfil Markowitz (Python)</label>
+                <select id="py-profile" onchange="runPythonQuantEngine()" class="w-full bg-[#050507] text-xs text-white font-medium focus:outline-none">
+                  <option value="iniciante">Iniciante (Foco Segurança + Selic 13,75%)</option>
+                  <option value="moderado" selected>Moderado (Equilíbrio IPCA + Dividendos)</option>
+                  <option value="arrojado">Arrojado (Exportadoras USD + Upside)</option>
+                </select>
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Capital Inicial (R$)</label>
+                <input id="py-init" type="number" value="15000" step="1000" oninput="runPythonQuantEngine()" class="w-full bg-transparent text-sm font-mono tabular-nums font-bold text-white focus:outline-none" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Aporte Mensal (R$)</label>
+                <input id="py-monthly" type="number" value="1500" step="250" oninput="runPythonQuantEngine()" class="w-full bg-transparent text-sm font-mono tabular-nums font-bold text-[#FF6B00] focus:outline-none" />
+              </div>
+              <div class="bg-[#050507] p-3.5 rounded-xl border border-white/[0.07]">
+                <label class="block text-[10px] text-zinc-500 uppercase mb-1">Horizonte (Anos)</label>
+                <input id="py-years" type="number" value="10" min="1" max="30" oninput="runPythonQuantEngine()" class="w-full bg-transparent text-sm font-mono tabular-nums font-bold text-emerald-400 focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              <div class="lg:col-span-6 rounded-2xl bg-[#050507] border border-white/[0.08] p-4 space-y-2">
+                <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400 border-b border-white/[0.06] pb-2">
+                  <span class="text-sky-400 font-semibold">🐍 larius_quant_engine.py (Python 3.12)</span>
+                  <span id="py-runtime-badge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Runtime: Ativo ✓</span>
+                </div>
+                <pre class="text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-[360px] leading-relaxed select-text"><code>@dataclass
+class QuantAsset:
+    ticker: str
+    price: float
+    target: float
+    dy: float
+    beta: float
+    volatility: float
+
+    @property
+    def upside_pct(self) -> float:
+        return round(((self.target - self.price) / self.price) * 100.0, 2)
+
+    def expected_total_return(self) -> float:
+        return round(self.dy + (self.upside_pct * 0.65), 2)
+
+    def sharpe_ratio(self, risk_free_net_pct: float = 11.60) -> float:
+        excess = self.expected_total_return() - risk_free_net_pct
+        return round(excess / max(self.volatility, 5.0), 2)
+
+def regressive_ir_rate(days: int) -> float:
+    if days <= 180: return 0.225
+    elif days <= 360: return 0.200
+    elif days <= 720: return 0.175
+    return 0.150</code></pre>
+              </div>
+
+              <div class="lg:col-span-6 rounded-2xl bg-[#050507] border border-white/[0.08] p-4 space-y-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400 border-b border-white/[0.06] pb-2">
+                  <span class="text-[#FF6B00] font-semibold">⚡ Saída Quantitativa em Tempo Real (JSON / Alocação)</span>
+                  <span class="text-zinc-500">CVM 19 Fee-Based</span>
+                </div>
+                <pre id="py-output-console" class="text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-[360px] leading-relaxed tabular-nums select-text"></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <div id="asset-inspector-modal" onclick="if(event.target === this) closeAssetInspector()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="spotlight-card max-w-xl w-full p-6 space-y-4 border border-white/[0.15]">
+      <div class="flex items-start justify-between border-b border-white/[0.07] pb-3">
+        <div>
+          <span id="insp-ticker" class="font-mono font-bold text-xl text-white">ITUB4</span>
+          <span id="insp-name" class="text-xs text-zinc-400 ml-2">Itaú Unibanco</span>
+        </div>
+        <button onclick="closeAssetInspector()" class="text-zinc-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="insp-body" class="space-y-4 text-xs text-zinc-300 leading-relaxed"></div>
+    </div>
+  </div>
+
+  <div id="voice-modal" onclick="if(event.target === this) closeVoiceCloneModal()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="spotlight-card max-w-lg w-full p-6 space-y-5 border border-white/[0.15]">
+      <div class="flex items-start justify-between border-b border-white/[0.07] pb-3">
+        <div>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-[#FF6B00]">Calibrador Vocal Neural</div>
+          <h3 class="text-base font-semibold text-white mt-0.5">Sincronizar a Voz do Larius com a Sua Voz</h3>
+        </div>
+        <button onclick="closeVoiceCloneModal()" class="text-zinc-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[#050507] border border-white/[0.07] space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-white">1. Gravar 5s da Sua Voz no Microfone</span>
+          <span id="vc-status" class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.06] text-zinc-400">Pronto</span>
+        </div>
+        <button onclick="calibrateVoiceFromMic()" id="btn-vc-rec" class="w-full py-2.5 rounded-xl bg-[#FF6B00] hover:bg-[#ff7b1a] text-[#050507] font-semibold text-xs transition flex items-center justify-center gap-2">
+          <i data-lucide="mic" class="w-4 h-4"></i>
+          <span>Gravar Minha Voz para Ajustar Timbre e Cadência</span>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">2. Motor de Voz Natural (Português)</label>
+          <select id="vc-engine" onchange="applyVoiceParams()" class="w-full bg-[#050507] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-zinc-400">Tom (Pitch)</span>
+              <span id="vc-pitch-lbl" class="font-mono text-white">0.94</span>
+            </div>
+            <input id="vc-pitch" type="range" min="0.75" max="1.20" step="0.02" value="0.94" oninput="applyVoiceParams()" class="w-full accent-[#FF6B00]" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-zinc-400">Velocidade</span>
+              <span id="vc-rate-lbl" class="font-mono text-white">1.08x</span>
+            </div>
+            <input id="vc-rate" type="range" min="0.85" max="1.30" step="0.02" value="1.08" oninput="applyVoiceParams()" class="w-full accent-[#FF6B00]" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-white/[0.07]">
+        <button onclick="testLariusVoice()" class="px-4 py-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] text-xs font-medium text-white">
+          🔊 Ouvir Voz do Larius
+        </button>
+        <button onclick="closeVoiceCloneModal()" class="px-4 py-2 rounded-xl bg-[#FF6B00] text-[#050507] text-xs font-semibold">
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app-data.js"></script>
+  <script src="app-engine.js"></script>
+</body>
+</html>
