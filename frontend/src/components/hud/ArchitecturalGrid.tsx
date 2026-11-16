@@ -3,17 +3,23 @@ import React from 'react';
 const VERTICAL_LINES = ['12.6%', '37.5%', '61.9%', '86.2%'];
 const HORIZONTAL_LINES = ['32.7%', '71.4%'];
 
-export const ArchitecturalGrid: React.FC = () => {
+interface ArchitecturalGridProps {
+  transparentBackdrop?: boolean;
+}
+
+export const ArchitecturalGrid: React.FC<ArchitecturalGridProps> = ({ transparentBackdrop = false }) => {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden="true">
       {/* Deep Space Brown/Black radial nebula (#0D0905 -> #17110A -> Void #030305) */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(680px circle at 50% 45%, rgba(217, 119, 6, 0.08), rgba(23, 17, 10, 0.45) 42%, rgba(13, 9, 5, 0.72) 70%, #030305 100%)',
-        }}
-      />
+      {!transparentBackdrop && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(680px circle at 50% 45%, rgba(217, 119, 6, 0.08), rgba(23, 17, 10, 0.45) 42%, rgba(13, 9, 5, 0.72) 70%, #030305 100%)',
+          }}
+        />
+      )}
 
       {VERTICAL_LINES.map((left, idx) => (
         <div

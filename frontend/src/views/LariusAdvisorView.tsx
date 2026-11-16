@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Mic, Send, Volume2, VolumeX } from 'lucide-react';
 import { askLariusAdvisor } from '../services/api';
-import { ExperienceLevel, RiskProfile, ShaderUniformParams } from '../types/investimentos';
-import { LariusShaderCanvas } from '../components/three/LariusShaderCanvas';
+import { ExperienceLevel, RiskProfile } from '../types/investimentos';
 
 interface ChatMessage {
   id: string;
@@ -22,8 +21,6 @@ interface LariusAdvisorViewProps {
   isSpeaking: boolean;
   isListening: boolean;
   muted: boolean;
-  shaderParams: ShaderUniformParams;
-  getAudioEnergy: () => number;
   onToggleMute: () => void;
   onStopSpeech: () => void;
   onSpeak: (text: string) => void;
@@ -59,8 +56,6 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
   isSpeaking,
   isListening,
   muted,
-  shaderParams,
-  getAudioEnergy,
   onToggleMute,
   onStopSpeech,
   onSpeak,
@@ -119,11 +114,11 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
   };
 
   return (
-    <section className="mx-auto flex min-h-screen max-w-[1380px] flex-col gap-6 px-5 pb-10 pt-[96px] md:px-[36px]">
+    <section className="pointer-events-auto mx-auto flex min-h-screen max-w-[1380px] flex-col gap-6 px-5 pb-10 pt-[96px] md:px-[36px]">
       {/* Investor Profile & Experience Selector (Zero Dev/Prompt/Voice Controls) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border border-white/[0.08] bg-[#09090B]/90 px-5 py-3.5 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-hud-border bg-hud-surface px-5 py-3.5 shadow-hud backdrop-blur-[16px]">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
+          <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-muted">
             PERFIL DE RISCO:
           </span>
           {RISK_OPTIONS.map((opt) => (
@@ -132,8 +127,8 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
               onClick={() => onChangeRiskProfile(opt.id)}
               className={`border px-3 py-1.5 font-mono text-[11px] transition-colors ${
                 riskProfile === opt.id
-                  ? 'border-white/50 bg-[#F4F4F5] font-semibold text-[#030304]'
-                  : 'border-white/[0.08] bg-[#030304] text-zinc-400 hover:border-white/25 hover:text-white'
+                  ? 'border-hud-borderActive bg-accretion-gold font-semibold text-void'
+                  : 'border-hud-border bg-void/80 text-text-muted hover:border-hud-borderActive hover:text-text-primary'
               }`}
             >
               {opt.label}
@@ -142,7 +137,7 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
+          <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-muted">
             EXPERIÊNCIA:
           </span>
           {EXPERIENCE_OPTIONS.map((lvl) => (
@@ -151,8 +146,8 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
               onClick={() => onChangeExperienceLevel(lvl.id)}
               className={`border px-3 py-1.5 font-mono text-[11px] transition-colors ${
                 experienceLevel === lvl.id
-                  ? 'border-white/40 bg-[#141418] font-semibold text-white'
-                  : 'border-white/[0.08] bg-[#030304] text-zinc-400 hover:text-white'
+                  ? 'border-hud-borderActive bg-accretion-bronze/60 font-semibold text-accretion-photon'
+                  : 'border-hud-border bg-void/80 text-text-muted hover:border-hud-borderActive hover:text-text-primary'
               }`}
             >
               {lvl.label}
@@ -161,31 +156,46 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
         </div>
       </div>
 
-      {/* Main Split Stage: Voice Sphere + Conversation */}
+      {/* Main Split Stage: Singularity Chamber + Conversation */}
       <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="relative flex min-h-[460px] flex-col justify-between overflow-hidden border border-white/[0.08] bg-[#030304] p-5 lg:col-span-6">
+        <div className="relative flex min-h-[460px] flex-col justify-between overflow-hidden border border-hud-border bg-void/25 p-5 shadow-hud backdrop-blur-[4px] lg:col-span-6">
           <div className="relative z-10 flex items-center justify-between font-mono text-[11px]">
-            <div className="flex items-center gap-2 text-zinc-300">
-              <span className={`h-2 w-2 ${isSpeaking || isListening ? 'animate-ping bg-emerald-400' : 'bg-zinc-500'}`} />
+            <div className="flex items-center gap-2 text-accretion-gold">
+              <span
+                className={`h-2 w-2 ${
+                  isSpeaking || isListening ? 'animate-ping bg-signal-positive' : 'bg-accretion-amber'
+                }`}
+              />
               <span>LARIUS // VISÃO {activeFocus}</span>
             </div>
 
             <button
               onClick={onToggleMute}
-              className="border border-white/[0.12] bg-[#09090B] p-1.5 text-zinc-300 hover:text-white"
+              className="border border-hud-border bg-hud-surface p-1.5 text-accretion-gold transition-colors hover:border-hud-borderActive hover:text-accretion-photon"
               aria-label="Alternar áudio"
             >
               {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
             </button>
           </div>
 
-          <div className="absolute inset-0 z-0">
-            <LariusShaderCanvas
-              isSpeaking={isSpeaking || isListening}
-              shaderParams={shaderParams}
-              getAudioEnergy={getAudioEnergy}
-              className="h-full w-full"
+          <div
+            className="pointer-events-none my-auto flex flex-col items-center justify-center py-10 text-center"
+            aria-hidden="true"
+          >
+            <div
+              className={`h-28 w-28 rounded-full border transition-all duration-300 ${
+                isSpeaking || isListening
+                  ? 'scale-110 border-accretion-photon/60 shadow-[0_0_50px_rgba(245,183,79,0.35)]'
+                  : 'border-hud-border shadow-[0_0_24px_rgba(217,119,6,0.18)]'
+              }`}
             />
+            <span className="mt-4 font-mono text-[10px] tracking-[0.18em] text-accretion-gold/85">
+              {isListening
+                ? 'ESCUTANDO MICROFONE...'
+                : isSpeaking
+                ? 'SÍNTESE VOCAL ATIVA'
+                : 'NÚCLEO SINGULARITY // PRONTO'}
+            </span>
           </div>
 
           <div className="relative z-10 mt-auto flex flex-col items-center gap-3 pt-4">
@@ -194,7 +204,7 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
                 <span
                   key={idx}
                   className={`w-1 transition-all duration-150 ${
-                    isSpeaking || isListening ? 'bg-white' : 'bg-zinc-700'
+                    isSpeaking || isListening ? 'bg-accretion-gold' : 'bg-accretion-bronze/50'
                   }`}
                   style={{
                     height: isSpeaking || isListening ? `${8 + ((idx * 7) % 16)}px` : '4px',
@@ -206,7 +216,7 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => onStartVoice((t) => void sendQuestion(t))}
-                className="flex items-center gap-2 bg-[#F4F4F5] px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-[#030304] hover:bg-white"
+                className="flex items-center gap-2 bg-accretion-gold px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-void shadow-[0_0_20px_rgba(245,183,79,0.25)] transition-colors hover:bg-accretion-photon"
               >
                 <Mic className="h-3.5 w-3.5" />
                 <span>{isListening ? 'Ouvindo Você...' : 'Falar com Larius'}</span>
@@ -214,7 +224,7 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
               {isSpeaking && (
                 <button
                   onClick={onStopSpeech}
-                  className="border border-white/20 bg-[#09090B] px-3.5 py-2.5 font-mono text-[11px] text-zinc-300 hover:text-white"
+                  className="border border-hud-border bg-hud-surface px-3.5 py-2.5 font-mono text-[11px] text-text-primary transition-colors hover:border-hud-borderActive hover:text-accretion-gold"
                 >
                   Silenciar
                 </button>
@@ -223,11 +233,11 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
           </div>
         </div>
 
-        <div className="flex min-h-[460px] flex-col justify-between border border-white/[0.08] bg-[#09090B]/90 lg:col-span-6">
-          <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-3.5">
+        <div className="flex min-h-[460px] flex-col justify-between border border-hud-border bg-hud-surface shadow-hud backdrop-blur-[16px] lg:col-span-6">
+          <div className="flex items-center justify-between border-b border-hud-border px-5 py-3.5">
             <div>
-              <h2 className="font-display text-sm font-medium text-white">Consultor Larius</h2>
-              <p className="font-mono text-[11px] text-zinc-500">
+              <h2 className="font-display text-sm font-medium text-text-primary">Consultor Larius</h2>
+              <p className="font-mono text-[11px] text-text-muted">
                 Orientação patrimonial adaptada ao perfil {riskProfile}
               </p>
             </div>
@@ -239,33 +249,35 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
                 key={m.id}
                 className={
                   m.sender === 'user'
-                    ? 'ml-10 border border-white/20 bg-[#F4F4F5] p-3.5 font-medium text-[#030304]'
-                    : 'mr-4 space-y-2 border border-white/[0.08] bg-[#030304] p-4 text-zinc-200'
+                    ? 'ml-10 border border-hud-borderActive bg-accretion-gold p-3.5 font-medium text-void'
+                    : 'mr-4 space-y-2 border border-hud-border bg-void/85 p-4 text-text-primary'
                 }
               >
                 {m.sender === 'larius' && (
-                  <div className="flex items-center justify-between font-mono text-[10px] text-zinc-400">
-                    <span className="font-semibold text-white">LARIUS // CONSULTORIA</span>
-                    {m.tickers && m.tickers.length > 0 && <span>ATIVOS: {m.tickers.join(' · ')}</span>}
+                  <div className="flex items-center justify-between font-mono text-[10px] text-text-muted">
+                    <span className="font-semibold text-accretion-gold">LARIUS // CONSULTORIA</span>
+                    {m.tickers && m.tickers.length > 0 && (
+                      <span className="text-accretion-photon/90">ATIVOS: {m.tickers.join(' · ')}</span>
+                    )}
                   </div>
                 )}
                 <div className="whitespace-pre-line">{m.text}</div>
               </div>
             ))}
             {loading && (
-              <div className="mr-8 border border-white/[0.07] bg-[#030304] p-3 font-mono text-xs text-zinc-400">
+              <div className="mr-8 border border-hud-border bg-void/85 p-3 font-mono text-xs text-accretion-gold">
                 Analisando cenário e recomendações...
               </div>
             )}
           </div>
 
-          <div className="space-y-3 border-t border-white/[0.07] bg-[#030304]/90 p-4">
+          <div className="space-y-3 border-t border-hud-border bg-void/80 p-4">
             <div className="flex flex-wrap gap-1.5">
               {QUICK_PROMPTS.map((qp) => (
                 <button
                   key={qp}
                   onClick={() => void sendQuestion(qp)}
-                  className="border border-white/[0.08] bg-[#09090B] px-2.5 py-1 text-left font-mono text-[10.5px] text-zinc-300 transition-colors hover:border-white/35 hover:text-white"
+                  className="border border-hud-border bg-hud-surface px-2.5 py-1 text-left font-mono text-[10.5px] text-text-muted transition-colors hover:border-hud-borderActive hover:text-accretion-photon"
                 >
                   {qp}
                 </button>
@@ -278,12 +290,12 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Pergunte sobre ações, FIIs, impostos ou bancos..."
-                className="flex-1 border border-white/[0.12] bg-[#09090B] px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:border-white/40 focus:outline-none"
+                className="flex-1 border border-hud-border bg-void/90 px-3.5 py-2.5 text-xs text-text-primary placeholder-text-muted/60 focus:border-hud-borderActive focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 bg-[#F4F4F5] px-4 py-2.5 font-mono text-xs font-semibold uppercase text-[#030304] hover:bg-white disabled:opacity-50"
+                className="flex items-center gap-2 bg-accretion-gold px-4 py-2.5 font-mono text-xs font-semibold uppercase text-void transition-colors hover:bg-accretion-photon disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Enviar</span>

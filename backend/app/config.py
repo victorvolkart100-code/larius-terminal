@@ -61,14 +61,18 @@ class FinancialParamsState:
 
 @dataclass
 class ServerRuntimeState:
-    admin_private_key: str = field(default_factory=lambda: os.getenv("LARIUS_ADMIN_PRIVATE_KEY", ""))
+    admin_private_key: str = field(
+        default_factory=lambda: (
+            os.getenv("ADMIN_SECRET_TOKEN") or os.getenv("LARIUS_ADMIN_PRIVATE_KEY") or ""
+        )
+    )
     session_secret: str = field(
         default_factory=lambda: os.getenv("LARIUS_SESSION_SECRET") or secrets.token_hex(32)
     )
     voice: VoiceCloneState = field(
         default_factory=lambda: VoiceCloneState(
             provider=(os.getenv("VOICE_PROVIDER", "elevenlabs").lower() if os.getenv("VOICE_PROVIDER", "elevenlabs").lower() in ("elevenlabs", "cartesia", "xtts") else "elevenlabs"),  # type: ignore[arg-type]
-            voice_id=os.getenv("VOICE_CLONE_ID", ""),
+            voice_id=os.getenv("LARIUS_VOICE_ID") or os.getenv("VOICE_CLONE_ID") or "",
             api_key=os.getenv("VOICE_API_KEY", ""),
             xtts_endpoint=os.getenv("XTTS_ENDPOINT_URL", "http://127.0.0.1:8020"),
         )

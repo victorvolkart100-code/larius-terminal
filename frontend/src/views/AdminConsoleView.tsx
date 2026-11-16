@@ -19,6 +19,7 @@ import {
   VoiceConfigAdminView,
   VoiceProvider,
 } from '../types/investimentos';
+import { BrandLogo } from '../components/hud/BrandLogo';
 
 interface AdminConsoleViewProps {
   onExitToPublic: () => void;
@@ -106,7 +107,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
   };
 
   const handleTestVoiceTTS = async () => {
-    setStatusNotice('Solicitando síntese segura em /api/lariustts...');
+    setStatusNotice('Solicitando síntese segura em /api/larius/tts...');
     const blob = await requestLariusSpeechAudio(
       'Modo Arquiteto verificado. Síntese de voz isolada via rota segura no servidor.'
     );
@@ -115,9 +116,9 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
       await audio.play();
-      setStatusNotice('Áudio devolvido com sucesso por /api/lariustts.');
+      setStatusNotice('Áudio devolvido com sucesso por /api/larius/tts.');
     } else {
-      setStatusNotice('Configuração de VOICE_CLONE_ID / VOICE_API_KEY pendente ou provedor indisponível.');
+      setStatusNotice('Configuração de LARIUS_VOICE_ID / VOICE_API_KEY pendente ou provedor indisponível.');
     }
     void loadAdminWorkspace();
   };
@@ -135,7 +136,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
 
   if (checkingSession) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#030304] font-mono text-xs text-zinc-400">
+      <div className="flex min-h-screen items-center justify-center bg-void font-mono text-xs text-accretion-gold">
         Verificando sessão do Modo Arquiteto...
       </div>
     );
@@ -144,31 +145,36 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
   if (!authenticated) {
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center px-5">
-        <div className="w-full max-w-md space-y-5 border border-white/[0.14] bg-[#09090B]/95 p-7 backdrop-blur-md">
-          <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div className="w-full max-w-md space-y-5 border border-hud-border bg-hud-surface p-7 shadow-hud backdrop-blur-[16px]">
+          <div className="flex items-center justify-between border-b border-hud-border pb-4">
             <div className="flex items-center gap-2.5">
-              <Lock className="h-4 w-4 text-white" />
-              <span className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-white">
+              <Lock className="h-4 w-4 text-accretion-gold" />
+              <span className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accretion-photon">
                 MODO ARQUITETO // /ADMIN
               </span>
             </div>
             <button
               onClick={onExitToPublic}
-              className="font-mono text-[11px] text-zinc-400 hover:text-white"
+              className="font-mono text-[11px] text-text-muted transition-colors hover:text-accretion-gold"
             >
               ← Voltar (/)
             </button>
           </div>
 
-          <p className="text-xs leading-relaxed text-zinc-400">
-            Área restrita protegida pela variável <code className="text-zinc-200">LARIUS_ADMIN_PRIVATE_KEY</code> do arquivo{' '}
-            <code className="text-zinc-200">backend/.env</code>. Credenciais de voz e parâmetros internos nunca são
-            expostos na interface pública.
+          <div className="py-1">
+            <BrandLogo compact />
+          </div>
+
+          <p className="text-xs leading-relaxed text-text-muted">
+            Área restrita protegida pelas variáveis <code className="text-accretion-gold">ADMIN_SECRET_TOKEN</code> /{' '}
+            <code className="text-accretion-gold">LARIUS_ADMIN_PRIVATE_KEY</code> do arquivo{' '}
+            <code className="text-accretion-photon">backend/.env</code>. Credenciais de voz e parâmetros internos nunca
+            são expostos na interface pública.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+              <label className="block font-mono text-[10px] uppercase tracking-wider text-text-muted">
                 Chave Privada (.env)
               </label>
               <input
@@ -176,20 +182,20 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                 required
                 value={privateKey}
                 onChange={(e) => setPrivateKey(e.target.value)}
-                placeholder="Digite LARIUS_ADMIN_PRIVATE_KEY"
-                className="mt-1.5 w-full border border-white/[0.14] bg-[#030304] px-3.5 py-2.5 font-mono text-xs text-white placeholder-zinc-600 focus:border-white/50 focus:outline-none"
+                placeholder="Digite ADMIN_SECRET_TOKEN"
+                className="mt-1.5 w-full border border-hud-border bg-void/90 px-3.5 py-2.5 font-mono text-xs text-text-primary placeholder-text-muted/60 focus:border-hud-borderActive focus:outline-none"
               />
             </div>
 
             {authError && (
-              <div className="border border-rose-400/30 bg-rose-500/10 p-3 font-mono text-[11px] text-rose-300">
+              <div className="border border-signal-negative/35 bg-signal-negative/10 p-3 font-mono text-[11px] text-signal-negative">
                 {authError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-[#F4F4F5] py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-[#030304] hover:bg-white"
+              className="w-full bg-accretion-gold py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-void shadow-[0_0_20px_rgba(245,183,79,0.22)] transition-colors hover:bg-accretion-photon"
             >
               Autenticar Arquiteto
             </button>
@@ -201,29 +207,33 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
 
   return (
     <section className="relative z-10 mx-auto max-w-[1380px] space-y-6 px-5 pb-16 pt-8 md:px-[36px]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border border-white/[0.1] bg-[#09090B]/95 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="h-5 w-5 text-emerald-400" />
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400">
-              AUTENTICADO // SESSÃO HMAC PRIVADA
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-hud-border bg-hud-surface px-6 py-4 shadow-hud backdrop-blur-[16px]">
+        <div className="flex items-center gap-4">
+          <BrandLogo compact />
+          <div className="h-6 w-px bg-hud-border" />
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="h-5 w-5 text-signal-positive" />
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal-positive">
+                AUTENTICADO // SESSÃO HMAC PRIVADA
+              </div>
+              <h1 className="font-display text-lg font-medium text-text-primary">
+                Painel Arquiteto — /admin
+              </h1>
             </div>
-            <h1 className="font-display text-lg font-medium text-white">
-              Painel Arquiteto — D.investimentos (/admin)
-            </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5 font-mono text-xs">
           <button
             onClick={onExitToPublic}
-            className="border border-white/[0.14] bg-[#030304] px-3.5 py-2 text-zinc-200 hover:border-white/40"
+            className="border border-hud-border bg-void/85 px-3.5 py-2 text-text-primary transition-colors hover:border-hud-borderActive hover:text-accretion-gold"
           >
             Interface Pública (/)
           </button>
           <button
             onClick={() => void handleLogout()}
-            className="flex items-center gap-1.5 border border-rose-400/30 bg-rose-500/10 px-3.5 py-2 text-rose-300 hover:bg-rose-500/20"
+            className="flex items-center gap-1.5 border border-signal-negative/35 bg-signal-negative/10 px-3.5 py-2 text-signal-negative transition-colors hover:bg-signal-negative/20"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Encerrar Sessão</span>
@@ -232,7 +242,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
       </div>
 
       {statusNotice && (
-        <div className="border border-emerald-400/30 bg-emerald-500/10 px-4 py-2.5 font-mono text-xs text-emerald-300">
+        <div className="border border-signal-positive/35 bg-signal-positive/10 px-4 py-2.5 font-mono text-xs text-signal-positive">
           {statusNotice}
         </div>
       )}
@@ -242,36 +252,36 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
         {voiceCfg && (
           <form
             onSubmit={handleSaveVoice}
-            className="space-y-4 border border-white/[0.08] bg-[#09090B]/95 p-6 lg:col-span-6"
+            className="space-y-4 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px] lg:col-span-6"
           >
-            <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
+            <div className="flex items-center justify-between border-b border-hud-border pb-3">
               <div>
-                <div className="font-mono text-[10px] uppercase text-zinc-500">
-                  ROTA ISOLADA /API/LARIUSTTS
+                <div className="font-mono text-[10px] uppercase text-accretion-gold">
+                  ROTA ISOLADA /API/LARIUS/TTS
                 </div>
-                <h2 className="font-display text-base font-medium text-white">
+                <h2 className="font-display text-base font-medium text-text-primary">
                   Calibração da Voz Clonada (Back-end Only)
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => void handleTestVoiceTTS()}
-                className="flex items-center gap-1.5 border border-white/20 bg-[#141418] px-3 py-1.5 font-mono text-[11px] text-white hover:border-white/50"
+                className="flex items-center gap-1.5 border border-hud-borderActive bg-nebula px-3 py-1.5 font-mono text-[11px] text-accretion-gold transition-colors hover:bg-accretion-gold/15 hover:text-accretion-photon"
               >
                 <Volume2 className="h-3.5 w-3.5" />
-                <span>Testar /api/lariustts</span>
+                <span>Testar /api/larius/tts</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 font-mono text-xs">
+            <div className="grid grid-cols-1 gap-3 font-mono text-xs sm:grid-cols-2">
               <div>
-                <label className="block text-[10px] uppercase text-zinc-500">Provedor TTS</label>
+                <label className="block text-[10px] uppercase text-text-muted">Provedor TTS</label>
                 <select
                   value={voiceCfg.provider}
                   onChange={(e) =>
                     setVoiceCfg({ ...voiceCfg, provider: e.target.value as VoiceProvider })
                   }
-                  className="mt-1 w-full border border-white/[0.12] bg-[#030304] px-3 py-2 text-white"
+                  className="mt-1 w-full border border-hud-border bg-void/90 px-3 py-2 text-accretion-gold focus:border-hud-borderActive focus:outline-none"
                 >
                   <option value="elevenlabs">ElevenLabs</option>
                   <option value="cartesia">Cartesia Sonic</option>
@@ -280,18 +290,18 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-zinc-500">Voice ID do Clone</label>
+                <label className="block text-[10px] uppercase text-text-muted">Voice ID do Clone</label>
                 <input
                   type="text"
                   value={voiceCfg.voice_id}
                   onChange={(e) => setVoiceCfg({ ...voiceCfg, voice_id: e.target.value })}
                   placeholder="ID da sua voz clonada"
-                  className="mt-1 w-full border border-white/[0.12] bg-[#030304] px-3 py-2 text-white"
+                  className="mt-1 w-full border border-hud-border bg-void/90 px-3 py-2 text-text-primary focus:border-hud-borderActive focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-zinc-500">
+                <label className="block text-[10px] uppercase text-text-muted">
                   API Key (Atual: {voiceCfg.api_key_masked})
                 </label>
                 <input
@@ -299,22 +309,22 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
                   placeholder="Preencha apenas para atualizar chave"
-                  className="mt-1 w-full border border-white/[0.12] bg-[#030304] px-3 py-2 text-white"
+                  className="mt-1 w-full border border-hud-border bg-void/90 px-3 py-2 text-text-primary focus:border-hud-borderActive focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-zinc-500">XTTS Endpoint (se XTTS)</label>
+                <label className="block text-[10px] uppercase text-text-muted">XTTS Endpoint (se XTTS)</label>
                 <input
                   type="text"
                   value={voiceCfg.xtts_endpoint}
                   onChange={(e) => setVoiceCfg({ ...voiceCfg, xtts_endpoint: e.target.value })}
-                  className="mt-1 w-full border border-white/[0.12] bg-[#030304] px-3 py-2 text-white"
+                  className="mt-1 w-full border border-hud-border bg-void/90 px-3 py-2 text-text-primary focus:border-hud-borderActive focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 border border-white/[0.06] bg-[#030304] p-4 font-mono text-xs">
+            <div className="grid grid-cols-2 gap-4 border border-hud-border bg-void/80 p-4 font-mono text-xs">
               {(
                 [
                   ['stability', 'Estabilidade', 0, 1, 0.02],
@@ -325,8 +335,8 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
               ).map(([field, label, min, max, step]) => (
                 <div key={field}>
                   <div className="flex justify-between text-[11px]">
-                    <span className="text-zinc-400">{label}</span>
-                    <strong className="text-white">{Number(voiceCfg[field]).toFixed(2)}</strong>
+                    <span className="text-text-muted">{label}</span>
+                    <strong className="text-accretion-gold">{Number(voiceCfg[field]).toFixed(2)}</strong>
                   </div>
                   <input
                     type="range"
@@ -337,7 +347,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                     onChange={(e) =>
                       setVoiceCfg({ ...voiceCfg, [field]: Number(e.target.value) })
                     }
-                    className="mt-1 w-full accent-white"
+                    className="mt-1 w-full accent-[#F5B74F]"
                   />
                 </div>
               ))}
@@ -345,7 +355,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
 
             <button
               type="submit"
-              className="w-full bg-[#F4F4F5] py-2.5 font-mono text-xs font-semibold uppercase text-[#030304] hover:bg-white"
+              className="w-full bg-accretion-gold py-2.5 font-mono text-xs font-semibold uppercase text-void transition-colors hover:bg-accretion-photon"
             >
               Salvar Calibração no Servidor
             </button>
@@ -356,13 +366,13 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
         {finParams && (
           <form
             onSubmit={handleSaveFinancial}
-            className="space-y-4 border border-white/[0.08] bg-[#09090B]/95 p-6 lg:col-span-6"
+            className="space-y-4 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px] lg:col-span-6"
           >
-            <div className="border-b border-white/[0.07] pb-3">
-              <div className="font-mono text-[10px] uppercase text-zinc-500">
+            <div className="border-b border-hud-border pb-3">
+              <div className="font-mono text-[10px] uppercase text-accretion-gold">
                 MOTOR QUANTITATIVO & PROMPT CVM 19
               </div>
-              <h2 className="font-display text-base font-medium text-white">
+              <h2 className="font-display text-base font-medium text-text-primary">
                 Parâmetros Financeiros do Sistema
               </h2>
             </div>
@@ -377,8 +387,8 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                   ['default_expected_return_pct', 'Retorno Alvo (% a.a.)'],
                 ] as Array<[keyof FinancialParamsAdmin, string]>
               ).map(([key, label]) => (
-                <div key={key} className="border border-white/[0.08] bg-[#030304] p-3">
-                  <label className="block text-[10px] uppercase text-zinc-500">{label}</label>
+                <div key={key} className="border border-hud-border bg-void/85 p-3">
+                  <label className="block text-[10px] uppercase text-text-muted">{label}</label>
                   <input
                     type="number"
                     step="0.05"
@@ -386,14 +396,14 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                     onChange={(e) =>
                       setFinParams({ ...finParams, [key]: Number(e.target.value) })
                     }
-                    className="mt-1 w-full bg-transparent text-sm font-bold text-white focus:outline-none"
+                    className="mt-1 w-full bg-transparent text-sm font-bold text-accretion-photon focus:outline-none"
                   />
                 </div>
               ))}
             </div>
 
-            <div className="border border-white/[0.08] bg-[#030304] p-3 font-mono text-xs">
-              <label className="block text-[10px] uppercase text-zinc-500">
+            <div className="border border-hud-border bg-void/85 p-3 font-mono text-xs">
+              <label className="block text-[10px] uppercase text-text-muted">
                 Diretriz Base do Prompt Fiduciário (CVM 19)
               </label>
               <textarea
@@ -402,13 +412,13 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
                 onChange={(e) =>
                   setFinParams({ ...finParams, prompt_guardrail_note: e.target.value })
                 }
-                className="mt-1 w-full bg-transparent text-xs text-zinc-200 focus:outline-none"
+                className="mt-1 w-full bg-transparent text-xs text-text-primary focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-[#F4F4F5] py-2.5 font-mono text-xs font-semibold uppercase text-[#030304] hover:bg-white"
+              className="w-full bg-accretion-gold py-2.5 font-mono text-xs font-semibold uppercase text-void transition-colors hover:bg-accretion-photon"
             >
               Aplicar Parâmetros no Motor
             </button>
@@ -418,52 +428,55 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onExitToPubl
 
       {/* 3. Prompt Layers Blueprint + Live Audit Logs */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="space-y-3 border border-white/[0.08] bg-[#09090B]/95 p-6 lg:col-span-5">
-          <div className="font-mono text-[10px] uppercase text-zinc-500">
+        <div className="space-y-3 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px] lg:col-span-5">
+          <div className="font-mono text-[10px] uppercase text-accretion-gold">
             ENGENHARIA DE PROMPT RESTRITA AO SERVIDOR
           </div>
-          <h3 className="font-display text-base font-medium text-white">Camadas Internas do Larius</h3>
+          <h3 className="font-display text-base font-medium text-text-primary">Camadas Internas do Larius</h3>
           <div className="space-y-2.5">
             {promptLayers.map((layer) => (
-              <div key={layer.layer_id} className="border border-white/[0.07] bg-[#030304] p-3 font-mono text-xs">
-                <div className="font-semibold text-white">{layer.title}</div>
-                <p className="mt-1 text-[11px] text-zinc-400">{layer.content}</p>
+              <div key={layer.layer_id} className="border border-hud-border bg-void/80 p-3 font-mono text-xs">
+                <div className="font-semibold text-accretion-photon">{layer.title}</div>
+                <p className="mt-1 text-[11px] text-text-muted">{layer.content}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-3 border border-white/[0.08] bg-[#09090B]/95 p-6 lg:col-span-7">
+        <div className="space-y-3 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px] lg:col-span-7">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-mono text-[10px] uppercase text-zinc-500">AUDITORIA & TELEMETRIA</div>
-              <h3 className="font-display text-base font-medium text-white">Logs do Sistema</h3>
+              <div className="font-mono text-[10px] uppercase text-accretion-gold">AUDITORIA & TELEMETRIA</div>
+              <h3 className="font-display text-base font-medium text-text-primary">Logs do Sistema</h3>
             </div>
             <button
               onClick={() => void loadAdminWorkspace()}
-              className="flex items-center gap-1.5 border border-white/[0.12] bg-[#030304] px-3 py-1.5 font-mono text-[11px] text-zinc-300 hover:text-white"
+              className="flex items-center gap-1.5 border border-hud-border bg-void/85 px-3 py-1.5 font-mono text-[11px] text-accretion-gold transition-colors hover:border-hud-borderActive hover:text-accretion-photon"
             >
               <RefreshCw className="h-3 w-3" />
               <span>Atualizar</span>
             </button>
           </div>
 
-          <div className="max-h-72 space-y-1.5 overflow-y-auto border border-white/[0.07] bg-[#030304] p-3 font-mono text-[11px]">
+          <div className="max-h-72 space-y-1.5 overflow-y-auto border border-hud-border bg-void/85 p-3 font-mono text-[11px]">
             {logs.map((entry, idx) => (
-              <div key={`${entry.timestamp}-${idx}`} className="flex flex-wrap items-baseline gap-2 border-b border-white/[0.04] pb-1.5">
-                <span className="text-zinc-500">{entry.timestamp}</span>
+              <div
+                key={`${entry.timestamp}-${idx}`}
+                className="flex flex-wrap items-baseline gap-2 border-b border-hud-border/40 pb-1.5"
+              >
+                <span className="text-text-muted">{entry.timestamp}</span>
                 <span
                   className={
                     entry.level === 'ERROR'
-                      ? 'text-rose-400'
+                      ? 'text-signal-negative'
                       : entry.level === 'WARN'
-                      ? 'text-amber-300'
-                      : 'text-emerald-400'
+                      ? 'text-accretion-gold'
+                      : 'text-signal-positive'
                   }
                 >
                   [{entry.category}/{entry.level}]
                 </span>
-                <span className="text-zinc-200">{entry.message}</span>
+                <span className="text-text-primary">{entry.message}</span>
               </div>
             ))}
           </div>

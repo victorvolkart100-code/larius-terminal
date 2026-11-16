@@ -13,9 +13,9 @@ import {
   HudViewId,
   MacroSnapshot,
   RiskProfile,
-  ShaderUniformParams,
 } from './types/investimentos';
 import { useAudioAnalyzer } from './hooks/useAudioAnalyzer';
+import LariusBlackHole3D from './components/LariusBlackHole3D';
 import { ArchitecturalGrid } from './components/hud/ArchitecturalGrid';
 import { TopNavHud } from './components/hud/TopNavHud';
 import { HudOverviewView } from './views/HudOverviewView';
@@ -31,14 +31,6 @@ function isAdminPath(): boolean {
   if (typeof window === 'undefined') return false;
   return window.location.pathname === '/admin' || window.location.hash === '#/admin';
 }
-
-const DEFAULT_SHADER_PARAMS: ShaderUniformParams = {
-  audioEnergy: 0.14,
-  turbulence: 1.05,
-  displacement: 0.22,
-  pointSize: 2.1,
-  coreOpacity: 0.84,
-};
 
 export const App: React.FC = () => {
   const [adminRoute, setAdminRoute] = useState<boolean>(isAdminPath);
@@ -98,12 +90,12 @@ export const App: React.FC = () => {
 
   if (adminRoute) {
     return (
-      <div className="relative min-h-screen w-full bg-[#030304] text-[#F4F4F5]">
+      <div className="relative min-h-screen w-full bg-void text-text-primary">
         <ArchitecturalGrid />
         <Suspense
           fallback={
-            <div className="flex min-h-screen items-center justify-center font-mono text-xs text-zinc-400">
-              Carregando Modo Arquiteto...
+            <div className="flex min-h-screen items-center justify-center font-mono text-xs text-accretion-gold">
+              Carregando módulo restrito...
             </div>
           }
         >
@@ -114,8 +106,14 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-[#030304] text-[#F4F4F5]">
-      <ArchitecturalGrid />
+    <div className="relative min-h-screen w-full bg-void text-text-primary">
+      <LariusBlackHole3D
+        audioLevel={audio.isSpeaking ? 0.58 : audio.isListening ? 0.28 : 0.08}
+        isListening={audio.isListening}
+        getAudioEnergy={audio.getAudioEnergy}
+      />
+
+      <ArchitecturalGrid transparentBackdrop />
 
       <TopNavHud
         activeView={activeView}
@@ -127,16 +125,15 @@ export const App: React.FC = () => {
         onQuickVoiceClick={() => setActiveView('larius')}
       />
 
-      <main className="relative z-10">
+      <main className="pointer-events-none relative z-10">
         {activeView === 'hud' && (
           <HudOverviewView
             macro={macro}
             stealthMode={stealthMode}
             riskProfile={riskProfile}
             onChangeRiskProfile={setRiskProfile}
-            isSpeaking={audio.isSpeaking || audio.isListening}
-            shaderParams={DEFAULT_SHADER_PARAMS}
-            getAudioEnergy={audio.getAudioEnergy}
+            experienceLevel={experienceLevel}
+            onChangeExperienceLevel={setExperienceLevel}
             onNavigate={setActiveView}
             onAskFromHud={routeToLariusWithPrompt}
           />
@@ -153,8 +150,6 @@ export const App: React.FC = () => {
             isSpeaking={audio.isSpeaking}
             isListening={audio.isListening}
             muted={audio.muted}
-            shaderParams={DEFAULT_SHADER_PARAMS}
-            getAudioEnergy={audio.getAudioEnergy}
             onToggleMute={() => audio.setMuted((m) => !m)}
             onStopSpeech={audio.stopSpeaking}
             onSpeak={(txt) => void audio.speak(txt)}

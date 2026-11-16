@@ -98,6 +98,7 @@ def ask_advisor(query: AdvisorQuery) -> AdvisorPublicResponse:
     return answer_public_advisor_query(query)
 
 
+@app.post("/api/larius/tts")
 @app.post("/api/lariustts")
 def larius_tts(req: TtsRequest) -> Response:
     """

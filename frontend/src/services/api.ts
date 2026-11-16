@@ -168,13 +168,13 @@ export async function askLariusAdvisor(
 }
 
 /**
- * Public UI sends ONLY plain text to /api/lariustts.
+ * Public UI sends ONLY plain text to /api/larius/tts.
  * Cloned Voice ID and provider API key are completely isolated in Python backend.
  */
 export async function requestLariusSpeechAudio(text: string): Promise<Blob | null> {
   if (fastApiAvailable === false) return null;
   try {
-    const res = await fetch(`${API_BASE}/lariustts`, {
+    const res = await fetch(`${API_BASE}/larius/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

@@ -34,21 +34,22 @@ export const SvgCompoundChart: React.FC<SvgCompoundChartProps> = ({ series }) =>
   return (
     <div className="relative w-full">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] tabular-nums">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-white">
-            <span className="h-2 w-2 bg-[#F4F4F5]" /> Carteira Larius (Isenta IR)
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="flex items-center gap-1.5 text-accretion-photon">
+            <span className="h-2 w-2 bg-accretion-gold" /> Carteira Larius (Isenta IR)
           </span>
-          <span className="flex items-center gap-1.5 text-emerald-400">
-            <span className="h-2 w-2 bg-emerald-400" /> CDB 100% CDI (Líq. IR)
+          <span className="flex items-center gap-1.5 text-signal-positive">
+            <span className="h-2 w-2 bg-signal-positive" /> CDB 100% CDI (Líq. IR)
           </span>
-          <span className="flex items-center gap-1.5 text-zinc-500">
-            <span className="h-2 w-2 bg-zinc-500" /> Banco 85% CDI
+          <span className="flex items-center gap-1.5 text-text-muted">
+            <span className="h-2 w-2 bg-text-muted" /> Banco 85% CDI
           </span>
         </div>
 
-        <div className="border border-white/[0.1] bg-[#09090B] px-3 py-1 text-zinc-300">
-          {active.label}: <strong className="text-white">R$ {active.larius_net.toLocaleString('pt-BR')}</strong> vs Banco{' '}
-          <span className="text-zinc-400">R$ {active.bank_85_net.toLocaleString('pt-BR')}</span>
+        <div className="border border-hud-border bg-void/90 px-3 py-1 text-text-muted">
+          {active.label}:{' '}
+          <strong className="text-accretion-gold">R$ {active.larius_net.toLocaleString('pt-BR')}</strong> vs Banco{' '}
+          <span className="text-text-primary/80">R$ {active.bank_85_net.toLocaleString('pt-BR')}</span>
         </div>
       </div>
 
@@ -58,9 +59,10 @@ export const SvgCompoundChart: React.FC<SvgCompoundChartProps> = ({ series }) =>
         onMouseLeave={() => setHoverIdx(series.length - 1)}
       >
         <defs>
-          <linearGradient id="platinumWaveGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#F4F4F5" stopOpacity="0.24" />
-            <stop offset="100%" stopColor="#030304" stopOpacity="0" />
+          <linearGradient id="accretionWaveGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F5B74F" stopOpacity="0.28" />
+            <stop offset="55%" stopColor="#D97706" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#030305" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -69,29 +71,29 @@ export const SvgCompoundChart: React.FC<SvgCompoundChartProps> = ({ series }) =>
           const labelVal = Math.round((maxVal * ratio) / 1000);
           return (
             <g key={ratio}>
-              <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-              <text x={padL - 8} y={y + 3} textAnchor="end" fill="#71717A" fontSize="10" fontFamily="JetBrains Mono">
+              <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="rgba(245, 183, 79, 0.10)" strokeWidth="1" />
+              <text x={padL - 8} y={y + 3} textAnchor="end" fill="#9E9282" fontSize="10" fontFamily="JetBrains Mono">
                 {labelVal}k
               </text>
             </g>
           );
         })}
 
-        <path d={buildArea((p) => p.larius_net)} fill="url(#platinumWaveGrad)" />
-        <path d={buildLine((p) => p.bank_85_net)} fill="none" stroke="#52525B" strokeDasharray="4 4" strokeWidth="1.5" />
-        <path d={buildLine((p) => p.cdb_100_net)} fill="none" stroke="#34D399" strokeWidth="1.8" />
-        <path d={buildLine((p) => p.larius_net)} fill="none" stroke="#F4F4F5" strokeWidth="2.4" />
+        <path d={buildArea((p) => p.larius_net)} fill="url(#accretionWaveGrad)" />
+        <path d={buildLine((p) => p.bank_85_net)} fill="none" stroke="#9E9282" strokeDasharray="4 4" strokeWidth="1.5" />
+        <path d={buildLine((p) => p.cdb_100_net)} fill="none" stroke="#4ADE80" strokeWidth="1.8" />
+        <path d={buildLine((p) => p.larius_net)} fill="none" stroke="#F5B74F" strokeWidth="2.4" />
 
         <line
           x1={toX(hoverIdx)}
           y1={padT}
           x2={toX(hoverIdx)}
           y2={padT + plotH}
-          stroke="rgba(244,244,245,0.28)"
+          stroke="rgba(255, 253, 245, 0.35)"
           strokeWidth="1"
         />
-        <circle cx={toX(hoverIdx)} cy={toY(active.larius_net)} r="4.5" fill="#F4F4F5" stroke="#030304" strokeWidth="2" />
-        <circle cx={toX(hoverIdx)} cy={toY(active.cdb_100_net)} r="3.5" fill="#34D399" />
+        <circle cx={toX(hoverIdx)} cy={toY(active.larius_net)} r="4.5" fill="#FFFDF5" stroke="#D97706" strokeWidth="2" />
+        <circle cx={toX(hoverIdx)} cy={toY(active.cdb_100_net)} r="3.5" fill="#4ADE80" />
 
         {series.map((pt, i) => {
           const showLabel = i === 0 || i === series.length - 1 || i % Math.max(1, Math.floor(series.length / 5)) === 0;
@@ -102,7 +104,7 @@ export const SvgCompoundChart: React.FC<SvgCompoundChartProps> = ({ series }) =>
                   x={toX(i)}
                   y={height - 8}
                   textAnchor="middle"
-                  fill={i === hoverIdx ? '#F4F4F5' : '#71717A'}
+                  fill={i === hoverIdx ? '#FFFDF5' : '#9E9282'}
                   fontSize="10"
                   fontFamily="JetBrains Mono"
                 >
