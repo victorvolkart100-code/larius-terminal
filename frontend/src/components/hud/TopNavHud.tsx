@@ -6,7 +6,6 @@ interface TopNavHudProps {
   activeView: HudViewId;
   onSelectView: (view: HudViewId) => void;
   macro: MacroSnapshot;
-  backendMode: 'FASTAPI' | 'LOCAL_TS';
   stealthMode: boolean;
   onToggleStealth: () => void;
   isVoiceActive: boolean;
@@ -18,14 +17,12 @@ const NAV_ITEMS: Array<{ id: HudViewId; num: string; label: string }> = [
   { id: 'larius', num: '02', label: 'LARIUS_IA' },
   { id: 'assets', num: '03', label: 'CARTEIRA_B3' },
   { id: 'compound', num: '04', label: 'JUROS_&_BANCOS' },
-  { id: 'architecture', num: '05', label: 'SHADERS_&_API' },
 ];
 
 export const TopNavHud: React.FC<TopNavHudProps> = ({
   activeView,
   onSelectView,
   macro,
-  backendMode,
   stealthMode,
   onToggleStealth,
   isVoiceActive,
@@ -36,7 +33,6 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
   return (
     <>
       <header className="fixed left-0 top-0 z-40 flex h-[64px] w-full items-center border-b border-white/[0.06] bg-[#030304]/80 px-5 backdrop-blur-md md:h-[72px] md:px-[36px]">
-        {/* Brand geometric vector emblem */}
         <button
           onClick={() => onSelectView('hud')}
           className="anim-hud-up flex items-center gap-3 text-left transition-opacity hover:opacity-85"
@@ -51,8 +47,7 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
           </span>
         </button>
 
-        {/* Aurex-style numbered navigation items */}
-        <nav className="ml-10 hidden items-center gap-7 xl:flex">
+        <nav className="ml-10 hidden items-center gap-8 xl:flex">
           {NAV_ITEMS.map((item, idx) => {
             const active = activeView === item.id;
             return (
@@ -68,15 +63,12 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
                 <span className={active ? 'font-semibold text-white' : 'text-zinc-400 group-hover:text-white'}>
                   {item.label}
                 </span>
-                {active && (
-                  <span className="absolute -bottom-[2px] left-0 h-px w-full bg-[#F4F4F5]" />
-                )}
+                {active && <span className="absolute -bottom-[2px] left-0 h-px w-full bg-[#F4F4F5]" />}
               </button>
             );
           })}
         </nav>
 
-        {/* Right Telemetry Cluster */}
         <div
           className="anim-hud-in ml-auto hidden items-center gap-3 lg:flex"
           style={{ animationDelay: '320ms' }}
@@ -86,22 +78,16 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
               SELIC <strong className="text-zinc-200">{macro.selic_pct.toFixed(2)}%</strong>
             </span>
             <span>
-              USD <strong className="text-zinc-200">R$ {macro.usd_brl.toFixed(2)}</strong>
+              IPCA <strong className="text-zinc-200">{macro.ipca_pct.toFixed(2)}%</strong>
             </span>
-            <span
-              className={`rounded-[3px] px-[6px] py-[2px] text-[10px] font-semibold ${
-                backendMode === 'FASTAPI'
-                  ? 'bg-emerald-400/15 text-emerald-300'
-                  : 'bg-[#F4F4F5]/10 text-zinc-300'
-              }`}
-            >
-              {backendMode === 'FASTAPI' ? '[ FASTAPI_LIVE ]' : '[ QUANT_TS_SYNC ]'}
+            <span>
+              USD <strong className="text-zinc-200">R$ {macro.usd_brl.toFixed(2)}</strong>
             </span>
           </div>
 
           <button
             onClick={onToggleStealth}
-            title="Modo Sigilo (Shift+H)"
+            title="Ocultar Valores (Shift+H)"
             className="flex h-8 w-8 items-center justify-center border border-white/[0.1] bg-[#09090B] text-zinc-400 transition-colors hover:border-white/30 hover:text-white"
           >
             {stealthMode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -109,18 +95,17 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
 
           <button
             onClick={onQuickVoiceClick}
-            className={`flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-all ${
+            className={`flex items-center gap-2 border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-all ${
               isVoiceActive
                 ? 'border-emerald-400/50 bg-emerald-400/10 text-emerald-300'
                 : 'border-white/[0.14] bg-[#09090B] text-white hover:border-white/40'
             }`}
           >
             <Mic className={`h-3.5 w-3.5 ${isVoiceActive ? 'animate-pulse text-emerald-300' : ''}`} />
-            <span>{isVoiceActive ? 'Larius Ativo' : 'Voz Larius'}</span>
+            <span>{isVoiceActive ? 'Larius Falando' : 'Falar com Larius'}</span>
           </button>
         </div>
 
-        {/* Mobile menu button */}
         <button
           onClick={() => setMenuOpen((o) => !o)}
           className="ml-auto flex h-10 w-10 items-center justify-center border border-white/[0.12] bg-[#09090B] text-white xl:hidden"
@@ -130,7 +115,6 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
         </button>
       </header>
 
-      {/* Mobile Drawer Overlay */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex flex-col bg-[#030304]/95 px-5 pb-10 pt-24 backdrop-blur-lg xl:hidden">
           <button
@@ -163,7 +147,9 @@ export const TopNavHud: React.FC<TopNavHudProps> = ({
           </div>
 
           <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-6 font-mono text-xs text-zinc-400">
-            <span>SELIC {macro.selic_pct}% · USD {macro.usd_brl.toFixed(2)}</span>
+            <span>
+              SELIC {macro.selic_pct.toFixed(2)}% · USD {macro.usd_brl.toFixed(2)}
+            </span>
             <button onClick={onToggleStealth} className="text-white underline">
               {stealthMode ? 'Mostrar Valores' : 'Ocultar Valores'}
             </button>

@@ -1,9 +1,10 @@
-export type HudViewId = 'hud' | 'larius' | 'assets' | 'compound' | 'architecture';
+export type HudViewId = 'hud' | 'larius' | 'assets' | 'compound';
 
 export type AssetType = 'ACAO' | 'FII';
 export type MacroGroup = 'SELIC' | 'IPCA' | 'DOLLAR' | 'FII' | 'AVOID';
-export type AdvisorPersona = 'fiduciario' | 'quantitativo' | 'auditor_custos';
-export type AllocationProfile = 'CONSERVADOR' | 'PATRIMONIO' | 'EXPANSAO';
+export type RiskProfile = 'CONSERVADOR' | 'MODERADO' | 'ARROJADO';
+export type ExperienceLevel = 'INICIANTE' | 'INTERMEDIARIO' | 'SENIOR';
+export type VoiceProvider = 'elevenlabs' | 'cartesia' | 'xtts';
 
 export interface Asset {
   ticker: string;
@@ -53,7 +54,7 @@ export interface AllocationItem {
 
 export interface AllocationResponse {
   amount_brl: number;
-  profile: AllocationProfile;
+  risk_profile: RiskProfile;
   total_allocated_brl: number;
   cash_reserve_selic_brl: number;
   added_monthly_income_brl: number;
@@ -73,6 +74,7 @@ export interface YearlyPoint {
 
 export interface CompoundSimulationResponse {
   years: number;
+  expected_rate_pct: number;
   ir_rate_pct: number;
   total_invested: number;
   end_larius_net: number;
@@ -84,22 +86,13 @@ export interface CompoundSimulationResponse {
   series: YearlyPoint[];
 }
 
-export interface PromptEngineeringLayer {
-  layer_id: string;
-  title: string;
-  purpose: string;
-  content: string;
-}
-
-export interface AdvisorResponse {
-  persona: AdvisorPersona;
+export interface AdvisorPublicResponse {
+  risk_profile: RiskProfile;
+  experience_level: ExperienceLevel;
   reply_markdown: string;
   speech_script: string;
   referenced_tickers: string[];
   hud_focus_mode: 'CORE' | 'ASSET' | 'COMPOUND' | 'BROKERS';
-  shader_intensity: number;
-  assembled_system_prompt: string;
-  layers: PromptEngineeringLayer[];
 }
 
 export interface ShaderUniformParams {
@@ -118,4 +111,39 @@ export interface MacroSnapshot {
   dbgg_gdp_pct: number;
   ibov_points: number;
   ibov_delta_pct: number;
+}
+
+export interface VoiceConfigAdminView {
+  provider: VoiceProvider;
+  voice_id: string;
+  api_key_configured: boolean;
+  api_key_masked: string;
+  xtts_endpoint: string;
+  stability: number;
+  similarity_boost: number;
+  speed: number;
+  pitch_shift: number;
+}
+
+export interface FinancialParamsAdmin {
+  selic_pct: number;
+  ipca_pct: number;
+  usd_brl: number;
+  dbgg_gdp_pct: number;
+  default_expected_return_pct: number;
+  prompt_guardrail_note: string;
+}
+
+export interface PromptLayerAdmin {
+  layer_id: string;
+  title: string;
+  purpose: string;
+  content: string;
+}
+
+export interface SystemLogEntry {
+  timestamp: string;
+  category: string;
+  level: string;
+  message: string;
 }

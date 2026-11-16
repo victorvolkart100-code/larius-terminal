@@ -46,7 +46,7 @@ export const WealthSimulatorView: React.FC<WealthSimulatorViewProps> = ({
       <div className="space-y-6 border border-white/[0.08] bg-[#09090B]/90 p-6 backdrop-blur-md">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-            MOTOR QUANTITATIVO PYTHON // TABELA REGRESSIVA IR (22,5% A 15%)
+            PROJEÇÃO TRIBUTÁRIA // TABELA REGRESSIVA IR (22,5% A 15%)
           </div>
           <h2 className="font-display text-lg font-medium text-white">
             Simulador Patrimonial: Juros Compostos, Imposto de Renda & Bancos
@@ -245,7 +245,7 @@ export const WealthSimulatorView: React.FC<WealthSimulatorViewProps> = ({
                 onClick={() => onAskBrokerWithLarius(b.name)}
                 className="w-full border border-white/[0.12] bg-[#09090B] py-2 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/40 hover:text-white"
               >
-                Auditar {b.name} com Larius →
+                Consultar Larius sobre {b.name} →
               </button>
             </div>
           ))}

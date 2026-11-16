@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { AllocationProfile, AllocationResponse, Asset, MacroGroup } from '../types/investimentos';
+import { AllocationResponse, Asset, MacroGroup, RiskProfile } from '../types/investimentos';
 import { requestAllocation } from '../services/api';
 
 interface PortfolioMatrixViewProps {
   assets: Asset[];
   stealthMode: boolean;
+  riskProfile: RiskProfile;
+  onChangeRiskProfile: (profile: RiskProfile) => void;
   onInspectAssetWithLarius: (ticker: string) => void;
 }
 
@@ -21,12 +23,7 @@ const Sparkline: React.FC<{ data: number[]; positive: boolean }> = ({ data, posi
     .join(' ');
   return (
     <svg width="82" height="22" viewBox="0 0 82 22" className="inline-block">
-      <polyline
-        fill="none"
-        stroke={positive ? '#34D399' : '#F87171'}
-        strokeWidth="1.5"
-        points={pts}
-      />
+      <polyline fill="none" stroke={positive ? '#34D399' : '#F87171'} strokeWidth="1.5" points={pts} />
     </svg>
   );
 };
@@ -34,33 +31,33 @@ const Sparkline: React.FC<{ data: number[]; positive: boolean }> = ({ data, posi
 export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
   assets,
   stealthMode,
+  riskProfile,
+  onChangeRiskProfile,
   onInspectAssetWithLarius,
 }) => {
   const [amountBrl, setAmountBrl] = useState<number>(3000);
-  const [profile, setProfile] = useState<AllocationProfile>('PATRIMONIO');
   const [allocation, setAllocation] = useState<AllocationResponse | null>(null);
   const [groupFilter, setGroupFilter] = useState<'ALL' | MacroGroup>('ALL');
 
   useEffect(() => {
     let mounted = true;
-    void requestAllocation(amountBrl, profile).then((res) => {
+    void requestAllocation(amountBrl, riskProfile).then((res) => {
       if (mounted) setAllocation(res);
     });
     return () => {
       mounted = false;
     };
-  }, [amountBrl, profile]);
+  }, [amountBrl, riskProfile]);
 
   const filteredAssets = assets.filter((a) => groupFilter === 'ALL' || a.group === groupFilter);
 
   return (
     <section className="mx-auto max-w-[1380px] space-y-6 px-5 pb-16 pt-[96px] md:px-[36px]">
-      {/* Smart Monthly Lot Allocator */}
       <div className="space-y-5 border border-white/[0.08] bg-[#09090B]/90 p-6 backdrop-blur-md">
         <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] pb-4 md:flex-row md:items-center">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-              EXECUÇÃO POR LOTE DISCRETO // TAXA ZERO
+              RECOMENDAÇÃO DISCRETA DE COMPRA // CORRETAGEM ZERO
             </div>
             <h2 className="font-display text-lg font-medium text-white">
               Alocador Inteligente de Aporte Mensal
@@ -81,15 +78,15 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
             </div>
 
             <div className="border border-white/[0.1] bg-[#030304] px-3 py-2">
-              <label className="block font-mono text-[9.5px] uppercase text-zinc-500">Diretriz</label>
+              <label className="block font-mono text-[9.5px] uppercase text-zinc-500">Perfil de Risco</label>
               <select
-                value={profile}
-                onChange={(e) => setProfile(e.target.value as AllocationProfile)}
+                value={riskProfile}
+                onChange={(e) => onChangeRiskProfile(e.target.value as RiskProfile)}
                 className="bg-[#030304] font-mono text-xs font-medium text-white focus:outline-none"
               >
-                <option value="CONSERVADOR">Conservadora (Selic 13,75%)</option>
-                <option value="PATRIMONIO">Patrimônio & Renda Isenta</option>
-                <option value="EXPANSAO">Expansão & Dólar R$ 5,50</option>
+                <option value="CONSERVADOR">Conservador (Foco Renda & Selic)</option>
+                <option value="MODERADO">Moderado (Equilíbrio IPCA + Dividendos)</option>
+                <option value="ARROJADO">Arrojado (Dólar & Crescimento)</option>
               </select>
             </div>
           </div>
@@ -99,9 +96,11 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
           <>
             <div className="grid grid-cols-1 gap-4 font-mono tabular-nums sm:grid-cols-3">
               <div className="border border-white/[0.07] bg-[#030304] p-4">
-                <span className="block text-[10px] uppercase text-zinc-500">Executado em Ativos B3</span>
+                <span className="block text-[10px] uppercase text-zinc-500">Total Alocado em Ativos</span>
                 <strong className="mt-1 block text-lg text-white">
-                  {stealthMode ? 'R$ •••••' : `R$ ${allocation.total_allocated_brl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                  {stealthMode
+                    ? 'R$ •••••'
+                    : `R$ ${allocation.total_allocated_brl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 </strong>
                 <span className="text-[11px] text-zinc-500">
                   Troco Tesouro Selic: R$ {allocation.cash_reserve_selic_brl.toFixed(2)}
@@ -130,12 +129,12 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
                 <thead>
                   <tr className="border-b border-white/[0.07] font-mono text-[10.5px] uppercase text-zinc-500">
                     <th className="px-4 py-3">Ativo</th>
-                    <th className="px-4 py-3">Tese de Proteção</th>
+                    <th className="px-4 py-3">Função na Carteira</th>
                     <th className="px-4 py-3 text-center">Peso</th>
                     <th className="px-4 py-3 text-right">Cotação</th>
                     <th className="px-4 py-3 text-right">Quantidade</th>
                     <th className="px-4 py-3 text-right">Subtotal</th>
-                    <th className="px-4 py-3 text-right">Dividendo/Mês</th>
+                    <th className="px-4 py-3 text-right">Renda/Mês</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05] text-xs">
@@ -168,14 +167,13 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
         )}
       </div>
 
-      {/* Institutional Asset Screener Table */}
       <div className="space-y-4 border border-white/[0.08] bg-[#09090B]/90 p-6 backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-              UNIVERSO AUDITADO B3 & FIIs
+              UNIVERSO MONITORADO B3 & FIIs
             </div>
-            <h2 className="font-display text-lg font-medium text-white">Matriz Fundamentalista</h2>
+            <h2 className="font-display text-lg font-medium text-white">Recomendações & Indicadores</h2>
           </div>
 
           <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
@@ -210,13 +208,13 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
               <tr className="border-b border-white/[0.07] font-mono text-[10.5px] uppercase text-zinc-500">
                 <th className="px-4 py-3">Ativo</th>
                 <th className="px-4 py-3">Setor</th>
-                <th className="px-4 py-3 text-center">6M Trend</th>
+                <th className="px-4 py-3 text-center">Tendência</th>
                 <th className="px-4 py-3 text-right">Preço</th>
                 <th className="px-4 py-3 text-right">Alvo</th>
                 <th className="px-4 py-3 text-right">Upside</th>
                 <th className="px-4 py-3 text-right">Yield</th>
                 <th className="px-4 py-3 text-right">ROE</th>
-                <th className="px-4 py-3 text-right">Ação</th>
+                <th className="px-4 py-3 text-right">Consultor</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05] text-xs">

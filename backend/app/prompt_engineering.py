@@ -1,176 +1,168 @@
-"""Structured Prompt Engineering engine for the Larius Financial Advisor."""
+"""Server-only Prompt Engineering and sanitized public Advisory routing for Larius."""
 
 from __future__ import annotations
-from .engine import ASSETS_CATALOG, MACRO_SNAPSHOT, compute_smart_allocation, simulate_compound_wealth
+
+from .config import RUNTIME, record_log
+from .engine import ASSETS_CATALOG, compute_smart_allocation, simulate_compound_wealth
 from .models import (
-    AdvisorPersona,
+    AdvisorPublicResponse,
     AdvisorQuery,
-    AdvisorResponse,
     AllocationRequest,
     CompoundSimulationRequest,
+    ExperienceLevel,
     PromptEngineeringLayer,
+    RiskProfile,
 )
 
-PERSONA_DIRECTIVES: dict[AdvisorPersona, str] = {
-    "fiduciario": (
-        "Atue como Consultor Patrimonial Sênior CVM 19 (modelo fee-based, livre de conflito de comissão). "
-        "Explique com calma executiva, rigor analítico e foco em preservação de capital e renda isenta de IR."
-    ),
-    "quantitativo": (
-        "Atue como Estrategista Quantitativo de Mesa Institucional. Fundamente cada tese em múltiplos "
-        "(P/L, ROE, Beta, Volatilidade, Sharpe Líquido e correlação macro Selic/Dólar)."
-    ),
-    "auditor_custos": (
-        "Atue como Auditor Fiduciário de Custódia e Tributação. Identifique imediatamente custos ocultos de "
-        "corretagem bancária, spread de CDBs de varejo (<100% CDI) e retenções da tabela regressiva de IR."
-    ),
-}
 
+def build_prompt_layers_for_admin(
+    risk_profile: RiskProfile,
+    experience_level: ExperienceLevel,
+    portfolio_amount_brl: float,
+) -> tuple[str, list[PromptEngineeringLayer]]:
+    """Construct server-side prompt layers (accessible strictly inside /admin)."""
+    f = RUNTIME.financial
+    tone = (
+        "Explicação didática sem jargão excessivo para investidor iniciante."
+        if experience_level == "INICIANTE"
+        else "Equilíbrio entre clareza executiva e fundamentos de balanço."
+        if experience_level == "INTERMEDIARIO"
+        else "Linguagem técnica de mesa institucional com foco em múltiplos, Beta e Sharpe."
+    )
 
-def build_prompt_layers(persona: AdvisorPersona, portfolio_amount_brl: float) -> tuple[str, list[PromptEngineeringLayer]]:
-    """Construct transparent multi-layer prompt architecture for financial advisory."""
     layers = [
         PromptEngineeringLayer(
             layer_id="L1_PERSONA",
-            title="Camada 1 · Persona Fiduciária",
-            purpose="Define postura ética sem conflito de comissão e tom executivo claro.",
-            content=PERSONA_DIRECTIVES[persona],
+            title="Camada 1 · Persona & Perfil do Investidor",
+            purpose="Adapta profundidade técnica (Iniciante a Sênior) e apetite de risco.",
+            content=f"Consultor Patrimonial Larius CVM 19 | Perfil: {risk_profile} | Nível: {experience_level}. {tone}",
         ),
         PromptEngineeringLayer(
-            layer_id="L2_MACRO_CONTEXT",
-            title="Camada 2 · Injeção Macroeconômica em Tempo Real",
-            purpose="Ancora recomendações nas taxas vigentes B3/BACEN e no porte patrimonial.",
+            layer_id="L2_MACRO",
+            title="Camada 2 · Parâmetros Macro do Arquiteto",
+            purpose="Injeta taxas editadas no modo /admin sem exposição interna no DOM público.",
             content=(
-                f"Data-base: {MACRO_SNAPSHOT['reference_date']} | Selic: {MACRO_SNAPSHOT['selic_pct']}% a.a. | "
-                f"IPCA: {MACRO_SNAPSHOT['ipca_pct']}% | USD/BRL: R$ {MACRO_SNAPSHOT['usd_brl']:.2f} | "
-                f"Capital referência do cliente: R$ {portfolio_amount_brl:,.2f}."
+                f"Base {f.reference_date} | Selic: {f.selic_pct:.2f}% | IPCA: {f.ipca_pct:.2f}% | "
+                f"USD/BRL: R$ {f.usd_brl:.2f} | Patrimônio referência: R$ {portfolio_amount_brl:,.2f}."
             ),
         ),
         PromptEngineeringLayer(
             layer_id="L3_GUARDRAILS",
-            title="Camada 3 · Guardrails CVM 19 & Risco",
-            purpose="Evita recomendações imprudentes e exige menção explícita a risco, IR e liquidez.",
-            content=(
-                "Nunca prometa rentabilidade garantida em renda variável. Evite empresas altamente alavancadas "
-                "com dívida indexada ao CDI elevado. Sempre destaque isenção fiscal de dividendos/FIIs vs IR regressivo."
-            ),
+            title="Camada 3 · Diretrizes & Compliance CVM 19",
+            purpose="Restrições de risco configuradas pelo Arquiteto.",
+            content=f.prompt_guardrail_note,
         ),
         PromptEngineeringLayer(
-            layer_id="L4_VOICE_CADENCE",
-            title="Camada 4 · Síntese para HUD & Síntese Vocal",
-            purpose="Separa saída visual estruturada de um roteiro fluido de fala para o núcleo 3D.",
-            content=(
-                "Gerar paralelamente: (a) resposta objetiva com dados tabulares para o HUD e "
-                "(b) script limpo sem símbolos técnicos para narração natural em PT-BR sincronizada com uAudioEnergy."
-            ),
+            layer_id="L4_TTS_SYNC",
+            title="Camada 4 · Roteiro Vocal para /api/lariustts",
+            purpose="Prepara texto fluido em PT-BR para o clone de voz isolado no servidor.",
+            content="Gerar texto limpo em português natural para envio exclusivo à rota /api/lariustts.",
         ),
     ]
     assembled = "\n\n".join(f"[{layer.title}]\n{layer.content}" for layer in layers)
     return assembled, layers
 
 
-def answer_advisor_query(query: AdvisorQuery) -> AdvisorResponse:
-    """Route financial questions through the prompt layers and deterministic quant data."""
+def answer_public_advisor_query(query: AdvisorQuery) -> AdvisorPublicResponse:
+    """Process investor question on the server and return ONLY sanitized investor-facing data."""
     q = query.question.lower()
-    assembled_prompt, layers = build_prompt_layers(query.persona, query.portfolio_amount_brl)
+    record_log(
+        "ADVISOR",
+        "INFO",
+        f"Consulta Larius (Perfil={query.risk_profile}, Nível={query.experience_level}).",
+    )
 
     matched_asset = next(
         (a for a in ASSETS_CATALOG if a.ticker.lower() in q or a.name.lower() in q),
         None,
     )
     if matched_asset:
+        detail = (
+            f"{matched_asset.thesis}"
+            if query.experience_level == "INICIANTE"
+            else f"{matched_asset.thesis} Múltiplo P/L ou P/VP: {matched_asset.pl:.2f} | ROE: {matched_asset.roe:.1f}% | Beta: {matched_asset.beta:.2f}."
+        )
         reply = (
             f"### Parecer {matched_asset.ticker} — {matched_asset.name}\n\n"
-            f"{matched_asset.thesis}\n\n"
+            f"{detail}\n\n"
             f"- **Cotação / Alvo:** R$ {matched_asset.price:.2f} → R$ {matched_asset.target:.2f} (`{matched_asset.upside:+.1f}%`)\n"
-            f"- **Dividend Yield:** `{matched_asset.dy:.1f}% a.a.` | **ROE:** `{matched_asset.roe:.1f}%` | **Beta:** `{matched_asset.beta:.2f}`\n"
-            f"- **Fluxo de Proventos:** {matched_asset.pay_months}"
+            f"- **Dividend Yield:** `{matched_asset.dy:.1f}% a.a.` | **Proventos:** {matched_asset.pay_months}"
         )
         speech = (
             f"Analisando {matched_asset.name}, código {matched_asset.ticker}. "
-            f"{matched_asset.thesis} "
-            f"Hoje negocia a {matched_asset.price:.2f} reais, com preço alvo em {matched_asset.target:.2f} "
-            f"e dividendos anuais de {matched_asset.dy:.1f} por cento."
+            f"{matched_asset.thesis} Hoje negocia a {matched_asset.price:.2f} reais, com dividendo estimado de "
+            f"{matched_asset.dy:.1f} por cento ao ano."
         )
-        return AdvisorResponse(
-            persona=query.persona,
+        return AdvisorPublicResponse(
+            risk_profile=query.risk_profile,
+            experience_level=query.experience_level,
             reply_markdown=reply,
             speech_script=speech,
             referenced_tickers=[matched_asset.ticker],
             hud_focus_mode="ASSET",
-            shader_intensity=0.82,
-            assembled_system_prompt=assembled_prompt,
-            layers=layers,
         )
 
     if any(w in q for w in ("banco", "corretora", "taxa", "c6", "itaú", "itau", "inter", "nubank", "btg", "xp")):
         reply = (
-            "### Auditoria de Custódia & Corretagem Taxa Zero\n\n"
-            "Eliminar fricção de entrada acelera o juro composto líquido:\n"
+            "### Comparativo de Bancos & Corretoras\n\n"
             "- **Taxa Zero Real (Ações e FIIs):** Íon Itaú, Banco Inter, C6 Invest e Nubank.\n"
-            "- **Atenção ao Custo Fixo:** XP cobra R$ 4,90/ordem em ações; BTG isenta FIIs e cobra R$ 4,50 em ordens padrão abaixo da faixa private.\n"
-            "- **Regra Larius:** Nunca aceite CDB de varejo abaixo de 100% do CDI enquanto FIIs high-grade como `KNCR11` rendem líquidos e isentos de IR."
+            "- **Atenção ao Custo Fixo:** XP cobra R$ 4,90 por ordem em ações; BTG isenta FIIs e cobra R$ 4,50 em ordens padrão abaixo das faixas maiores.\n"
+            "- **Estratégia:** Combine uma corretora taxa zero com FIIs high-grade como `KNCR11` (rendimento isento de IR)."
         )
         speech = (
-            "Na auditoria de custos bancários, minha diretriz é simples: execute suas compras sem pagar corretagem. "
-            "Íon Itaú, Inter, C6 e Nubank entregam taxa zero real em ações e fundos imobiliários."
+            "Para preservar seus juros compostos, utilize instituições sem taxa de corretagem como "
+            "Íon Itaú, Banco Inter, C6 Invest ou Nubank na compra de ações e fundos imobiliários."
         )
-        return AdvisorResponse(
-            persona=query.persona,
+        return AdvisorPublicResponse(
+            risk_profile=query.risk_profile,
+            experience_level=query.experience_level,
             reply_markdown=reply,
             speech_script=speech,
             referenced_tickers=["ITUB4", "KNCR11"],
             hud_focus_mode="BROKERS",
-            shader_intensity=0.72,
-            assembled_system_prompt=assembled_prompt,
-            layers=layers,
         )
 
     if any(w in q for w in ("juro", "imposto", "cdb", "composto", "simula")):
         sim = simulate_compound_wealth(CompoundSimulationRequest())
         reply = (
-            "### Assimetria Tributária em 10 Anos (R$ 10k + R$ 1.000/mês)\n\n"
-            f"- **Carteira Larius (Proventos Isentos):** `R$ {sim.end_larius_net:,.0f}`\n"
-            f"- **CDB 100% CDI Líquido (-{sim.ir_rate_pct:.0f}% IR):** `R$ {sim.end_cdb_100_net:,.0f}` *(R$ {sim.ir_retained_cdb:,.0f} retidos de imposto)*\n"
-            f"- **Banco Varejo (85% CDI Líquido):** `R$ {sim.end_bank_85_net:,.0f}`\n\n"
-            f"**Alpha líquido sobre banco tradicional:** `+R$ {sim.alpha_over_bank:,.0f}`."
+            f"### Simulação Líquida em {sim.years} Anos (R$ 10k + R$ 1.000/mês)\n\n"
+            f"- **Carteira Recomendada (Proventos Isentos):** `R$ {sim.end_larius_net:,.0f}`\n"
+            f"- **CDB 100% CDI (-{sim.ir_rate_pct:.0f}% IR):** `R$ {sim.end_cdb_100_net:,.0f}`\n"
+            f"- **Banco Tradicional (85% CDI):** `R$ {sim.end_bank_85_net:,.0f}`\n\n"
+            f"**Diferença líquida estimada:** `+R$ {sim.alpha_over_bank:,.0f}`."
         )
         speech = (
-            f"Em dez anos mantendo aportes mensais de mil reais, a isenção de Imposto de Renda sobre dividendos e fundos imobiliários "
-            f"gera uma vantagem líquida superior a {int(sim.alpha_over_bank // 1000)} mil reais em relação aos bancos tradicionais."
+            f"Em dez anos mantendo aportes mensais de mil reais, a isenção tributária sobre dividendos e fundos imobiliários "
+            f"gera mais de {int(sim.alpha_over_bank // 1000)} mil reais de vantagem líquida frente aos bancos tradicionais."
         )
-        return AdvisorResponse(
-            persona=query.persona,
+        return AdvisorPublicResponse(
+            risk_profile=query.risk_profile,
+            experience_level=query.experience_level,
             reply_markdown=reply,
             speech_script=speech,
             referenced_tickers=["ITUB4", "SBSP3", "KNCR11"],
             hud_focus_mode="COMPOUND",
-            shader_intensity=0.78,
-            assembled_system_prompt=assembled_prompt,
-            layers=layers,
         )
 
-    alloc = compute_smart_allocation(AllocationRequest(amount_brl=3000.0, profile="PATRIMONIO"))
-    summary_lines = "\n".join(
-        f"- **{item.ticker}** (`{item.weight_pct}%`): {item.quantity} {'cotas' if item.asset_type == 'FII' else 'ações'} — R$ {item.subtotal_brl:.2f}"
+    alloc = compute_smart_allocation(AllocationRequest(amount_brl=3000.0, risk_profile=query.risk_profile))
+    lines = "\n".join(
+        f"- **{item.ticker}** (`{item.weight_pct}%`): {item.quantity} {'cotas' if item.asset_type == 'FII' else 'ações'} — {item.role}"
         for item in alloc.items
     )
     reply = (
-        "### Diretriz Patrimonial Ativa (Base R$ 3.000/mês)\n\n"
-        f"{summary_lines}\n\n"
-        f"**Impacto em renda passiva isenta:** `+R$ {alloc.added_monthly_income_brl:.2f}/mês` permanentes + R$ {alloc.cash_reserve_selic_brl:.2f} em reserva Tesouro Selic."
+        f"### Alocação Recomendada — Perfil {query.risk_profile}\n\n"
+        f"{lines}\n\n"
+        f"**Renda passiva mensal adicionada:** `+R$ {alloc.added_monthly_income_brl:.2f}/mês` isentos de IR."
     )
     speech = (
-        "Estruturei sua alocação disciplinada em três frentes: Itaú e Kinea para capturar a Selic alta; "
-        "Sabesp e Pátria Logística para blindagem contra inflação; e WEG como proteção direta em dólar."
+        f"Para o seu perfil {query.risk_profile.lower()}, estruturei uma carteira equilibrada para capturar juros, proteção contra inflação e receita em dólar, "
+        f"adicionando renda mensal isenta de Imposto de Renda."
     )
-    return AdvisorResponse(
-        persona=query.persona,
+    return AdvisorPublicResponse(
+        risk_profile=query.risk_profile,
+        experience_level=query.experience_level,
         reply_markdown=reply,
         speech_script=speech,
         referenced_tickers=[item.ticker for item in alloc.items],
         hud_focus_mode="CORE",
-        shader_intensity=0.74,
-        assembled_system_prompt=assembled_prompt,
-        layers=layers,
     )
