@@ -8,24 +8,23 @@ interface ChamferCardProps {
 }
 
 /**
- * Aurex-inspired architectural HUD panel featuring a 45-degree chamfered bottom-left corner
- * drawn via a crisp non-scaling 1px SVG polygon stroke.
+ * Obsidian Glass HUD chamfered card adhering strictly to Singularity & Accretion Gold tokens.
  */
 export const ChamferCard: React.FC<ChamferCardProps> = ({
   badge,
   children,
   className = '',
-  strokeColor = 'rgba(244, 244, 245, 0.36)',
+  strokeColor = 'rgba(245, 183, 79, 0.34)',
 }) => {
   return (
     <div className={`relative ${className}`}>
       {badge && (
-        <div className="mb-[10px] inline-block bg-[#F4F4F5] px-[7px] py-[2px] font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-[#030304]">
+        <div className="mb-[10px] inline-block bg-accretion-gold px-[8px] py-[2.5px] font-mono text-[10.5px] font-semibold uppercase tracking-[0.08em] text-void">
           {badge}
         </div>
       )}
       <div
-        className="relative bg-[#09090B]/80 p-5 backdrop-blur-md"
+        className="relative bg-hud-surface p-5 shadow-hud backdrop-blur-[16px]"
         style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 24px 100%, 0 calc(100% - 24px))' }}
       >
         <svg

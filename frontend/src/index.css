@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+  --font-jetbrains: 'JetBrains Mono', monospace;
+  --void-black: #030305;
+  --event-horizon: #000000;
+  --nebula-start: #0d0905;
+  --nebula-end: #17110a;
+  --hud-surface: rgba(14, 12, 10, 0.68);
+  --hud-border: rgba(245, 183, 79, 0.18);
+  --hud-border-active: rgba(255, 232, 179, 0.38);
+  --accretion-photon: #fffdf5;
+  --accretion-gold: #f5b74f;
+  --accretion-amber: #d97706;
+  --accretion-bronze: #78350f;
+  --text-primary: #f4efe6;
+  --text-muted: #9e9282;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,14 +29,21 @@
 
 html,
 body {
-  background-color: #030304;
-  color: #f4f4f5;
-  font-family: 'Manrope', sans-serif;
+  background-color: var(--void-black);
+  color: var(--text-primary);
+  font-family: var(--font-jakarta);
   overflow-x: hidden;
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+.hud-panel {
+  background: var(--hud-surface);
+  border: 1px solid var(--hud-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.75);
 }
 
 @keyframes hudFadeUp {
@@ -106,13 +132,13 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #030304;
+  background: #030305;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f1f27;
+  background: rgba(245, 183, 79, 0.25);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #32323e;
+  background: rgba(245, 183, 79, 0.45);
 }

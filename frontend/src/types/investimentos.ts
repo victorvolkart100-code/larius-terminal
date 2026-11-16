@@ -95,14 +95,6 @@ export interface AdvisorPublicResponse {
   hud_focus_mode: 'CORE' | 'ASSET' | 'COMPOUND' | 'BROKERS';
 }
 
-export interface ShaderUniformParams {
-  audioEnergy: number;
-  turbulence: number;
-  displacement: number;
-  pointSize: number;
-  coreOpacity: number;
-}
-
 export interface MacroSnapshot {
   reference_date: string;
   selic_pct: number;
