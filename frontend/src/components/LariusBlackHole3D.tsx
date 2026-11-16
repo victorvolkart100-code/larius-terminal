@@ -12,8 +12,8 @@ interface BlackHoleProps {
 
 const CAMERA_Z = 6.6;
 const CAMERA_FOV_DEG = 45.0;
-// Inclinacao estilo Gargantua (Interestelar): quase de perfil (~5.5 deg) com eixo diagonal ↗
-const BASE_TILT_X = 0.095;
+// Inclinacao estilo Gargantua (Interestelar): ~3.15 deg para expor #000000 acima e abaixo da faixa frontal
+const BASE_TILT_X = 0.055;
 const BASE_TILT_Z = 0.29;
 
 /**
@@ -91,7 +91,7 @@ const BlackHoleRaymarchShader = {
     vec4 evalAccretionDisk(vec3 p, vec3 rayDir, float speed, float voiceBoost, bool isSharpPlane) {
       float hr = length(p.xz);
       const float R_IN = 1.04;
-      const float R_OUT = 5.45;
+      const float R_OUT = 4.15;
 
       if (hr < R_IN * 0.88 || hr > R_OUT) return vec4(0.0);
 
@@ -190,7 +190,7 @@ const BlackHoleRaymarchShader = {
         }
 
         // Thin micro-slab volumetric ember glow around y=0 (gives textured thickness to front bridge)
-        if (abs(pos.y) < 0.075 && r > 0.95 && r < 4.6 && accAlpha < 0.98) {
+        if (abs(pos.y) < 0.075 && r > 0.95 && r < 4.0 && accAlpha < 0.98) {
           float dtSlab = clamp(min(r * 0.08, abs(pos.y) * 0.35 + 0.018), 0.015, 0.36);
           float yn = pos.y / 0.036;
           float vert = exp(-(yn * yn));
@@ -241,13 +241,13 @@ const BlackHoleRaymarchShader = {
         bgCol = vec3(0.0); // Pure #000000 Event Horizon shadow
       }
 
-      // Razor-sharp Photon Ring hugging critical orbit (r_ph ~ 0.585)
-      float drPh = max(minR - 0.578, 0.0) * 44.0;
-      float razorPhoton = exp(-(drPh * drPh)) * (1.85 + uAudio * 0.9);
-      float softCorona = exp(-max(minR - 0.56, 0.0) * 7.5) * 0.36;
-      if (hitBH) {
-        razorPhoton *= 0.24;
-        softCorona *= 0.14;
+      // Razor-sharp Photon Ring hugging critical orbit ONLY outside the pure #000000 Event Horizon
+      float razorPhoton = 0.0;
+      float softCorona = 0.0;
+      if (!hitBH) {
+        float drPh = max(minR - 0.582, 0.0) * 46.0;
+        razorPhoton = exp(-(drPh * drPh)) * (2.15 + uAudio * 0.9);
+        softCorona = exp(-max(minR - 0.56, 0.0) * 8.0) * 0.34;
       }
       vec3 coronaCol = vec3(1.000, 0.992, 0.961) * razorPhoton +
                        vec3(0.961, 0.718, 0.310) * softCorona * (1.0 + uAudio * 0.45);
@@ -383,7 +383,7 @@ function BlackHoleCore({ audioLevel, isListening, getAudioEnergy }: BlackHolePro
 
       <group ref={groupRef} rotation={[BASE_TILT_X, 0, BASE_TILT_Z]}>
         <mesh renderOrder={0}>
-          <sphereGeometry args={[0.98, 48, 48]} />
+          <sphereGeometry args={[1.005, 48, 48]} />
           <meshBasicMaterial colorWrite={false} depthWrite />
         </mesh>
 
