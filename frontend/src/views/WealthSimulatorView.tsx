@@ -41,9 +41,9 @@ export const WealthSimulatorView: React.FC<WealthSimulatorViewProps> = ({
   const displayedBrokers = brokers.filter((b) => !zeroOnly || b.zero_fee);
 
   return (
-    <section className="pointer-events-auto mx-auto max-w-[1380px] space-y-6 px-5 pb-16 pt-[96px] md:px-[36px]">
+    <section className="pointer-events-auto mx-auto max-w-[1440px] space-y-6 px-5 pb-16 pt-[88px] md:px-[36px] xl:pl-[84px]">
       {/* Compound Interest + Regressive IR Tax Simulator */}
-      <div className="space-y-6 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px]">
+      <div className="space-y-6 rounded-xl border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px]">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-accretion-gold">
             PROJEÇÃO TRIBUTÁRIA // TABELA REGRESSIVA IR (22,5% A 15%)
