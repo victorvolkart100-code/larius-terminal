@@ -114,9 +114,9 @@ export const LariusAdvisorView: React.FC<LariusAdvisorViewProps> = ({
   };
 
   return (
-    <section className="pointer-events-auto mx-auto flex min-h-screen max-w-[1380px] flex-col gap-6 px-5 pb-10 pt-[96px] md:px-[36px]">
+    <section className="pointer-events-auto mx-auto flex min-h-screen max-w-[1440px] flex-col gap-6 px-5 pb-10 pt-[88px] md:px-[36px] xl:pl-[84px]">
       {/* Investor Profile & Experience Selector (Zero Dev/Prompt/Voice Controls) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border border-hud-border bg-hud-surface px-5 py-3.5 shadow-hud backdrop-blur-[16px]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-hud-border bg-hud-surface px-5 py-3.5 shadow-hud backdrop-blur-[16px]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-muted">
             PERFIL DE RISCO:

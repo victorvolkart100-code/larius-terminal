@@ -129,11 +129,21 @@ export const App: React.FC = () => {
         {activeView === 'hud' && (
           <HudOverviewView
             macro={macro}
+            assets={assets}
             stealthMode={stealthMode}
             riskProfile={riskProfile}
             onChangeRiskProfile={setRiskProfile}
             experienceLevel={experienceLevel}
             onChangeExperienceLevel={setExperienceLevel}
+            isSpeaking={audio.isSpeaking}
+            isListening={audio.isListening}
+            muted={audio.muted}
+            onToggleMute={() => audio.setMuted((m) => !m)}
+            onStopSpeech={audio.stopSpeaking}
+            onSpeak={(txt) => void audio.speak(txt)}
+            onStartVoice={(cb) => {
+              audio.startVoiceCommand(cb);
+            }}
             onNavigate={setActiveView}
             onAskFromHud={routeToLariusWithPrompt}
           />

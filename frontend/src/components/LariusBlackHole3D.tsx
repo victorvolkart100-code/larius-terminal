@@ -10,18 +10,18 @@ interface BlackHoleProps {
   getAudioEnergy?: () => number;
 }
 
-const CAMERA_Z = 6.6;
+const CAMERA_Z = 6.5;
 const CAMERA_FOV_DEG = 45.0;
-// Inclinacao estilo Gargantua (Interestelar): ~3.15 deg para expor #000000 acima e abaixo da faixa frontal
-const BASE_TILT_X = 0.055;
-const BASE_TILT_Z = 0.29;
+// Angulo Gargantua (Interestelar): quase de perfil (~3.2 deg) e diagonal ascendente (↗)
+const BASE_TILT_X = 0.056;
+const BASE_TILT_Z = 0.285;
 
 /**
- * Raymarched Relativistic Gargantua Black Hole Shader
- * - Exact equatorial plane-crossing intersection + micro-slab ember depth for razor-sharp concentric filaments
- * - High-contrast dark dust lanes (#78350F / #030305) vs blazing Doppler-boosted plasma (#FFFDF5 / #F5B74F / #D97706)
- * - Hair-thin incandescent Photon Sphere ring around pure #000000 Event Horizon
- * - Seam-free differential Keplerian FBM (zero atan cut) + Web Audio reactivity
+ * Kip-Thorne / Gargantua Relativistic Black Hole Shader
+ * - Polar-sheared 6-octave FBM (uDir = cos/sin, zero atan seam) for long concentric orbital streaks
+ * - Edge-on limb-brightening so diagonal wings extend wide while keeping #000000 shadow clear above & below front bridge
+ * - High-contrast dark soot veins (#030305 / #78350F) across the front equatorial slash
+ * - Primary + secondary (n=2) razor-thin #FFFDF5 Photon Ring around pure #000000 Event Horizon
  */
 const BlackHoleRaymarchShader = {
   vertexShader: /* glsl */ `
@@ -63,13 +63,13 @@ const BlackHoleRaymarchShader = {
       return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     }
 
-    float fbm5(vec2 p) {
+    float fbm6(vec2 p) {
       float v = 0.0;
       float amp = 0.50;
       mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 6; i++) {
         v += amp * noise2D(p);
-        p = rot * p * 2.08 + vec2(11.3, -7.9);
+        p = rot * p * 2.06 + vec2(11.7, -8.3);
         amp *= 0.5;
       }
       return v;
@@ -87,72 +87,94 @@ const BlackHoleRaymarchShader = {
       return vec3(v.x * c - v.y * s, v.x * s + v.y * c, v.z);
     }
 
-    // Samples razor-sharp relativistic accretion filaments at a point p near y=0
+    // Evaluates ultra-sharp concentric Gargantua accretion streaks at equatorial crossing p
     vec4 evalAccretionDisk(vec3 p, vec3 rayDir, float speed, float voiceBoost, bool isSharpPlane) {
       float hr = length(p.xz);
-      const float R_IN = 1.04;
-      const float R_OUT = 4.15;
+      const float R_IN = 1.02;
+      const float R_CORE_OUT = 2.92;
+      const float R_WING_OUT = 5.35;
 
-      if (hr < R_IN * 0.88 || hr > R_OUT) return vec4(0.0);
+      if (hr < R_IN * 0.90 || hr > R_WING_OUT) return vec4(0.0);
 
-      float radialEnv = smoothstep(R_IN * 0.88, R_IN + 0.10, hr) *
-                        (1.0 - smoothstep(R_OUT * 0.42, R_OUT, hr));
+      vec2 unitDir = p.xz / max(hr, 0.001);
 
-      // Seam-free differential Keplerian shear in Cartesian XZ space
-      float twist = speed + 4.2 / (hr + 0.28);
-      float cs = cos(twist);
-      float sn = sin(twist);
-      vec2 pRot = mat2(cs, -sn, sn, cs) * p.xz;
+      // Edge-on limb factor: wings along +/-X have longer optical path than front/back center
+      float wingAniso = abs(unitDir.x);
+      float effectiveOut = mix(R_CORE_OUT, R_WING_OUT, wingAniso * wingAniso);
+      if (hr > effectiveOut) return vec4(0.0);
 
-      float fLow  = fbm5(pRot * 1.45);
-      float fHigh = fbm5(pRot * 4.8 + vec2(fLow * 2.1, -twist * 0.12));
+      float innerEdge = smoothstep(R_IN * 0.90, R_IN + 0.08, hr);
+      float outerEdge = 1.0 - smoothstep(R_IN + 0.35, effectiveOut, hr);
+      float radialEnv = innerEdge * pow(max(outerEdge, 1e-4), 0.78);
 
-      // Crisp orbital concentric tracks carved by dark soot gaps (Interstellar look)
-      float rWarp = hr + (fLow - 0.5) * 0.22;
-      float tA = 0.5 + 0.5 * sin(rWarp * 36.0 - uTime * 1.4);
-      float tB = 0.5 + 0.5 * cos(rWarp * 76.0 + fHigh * 3.8 + uTime * 2.1);
-      float fineTracks = (tA * tA * tA) * 0.72 + (tB * tB * tB) * 0.48;
+      // Seam-free differential Keplerian shear: rotate unit direction vector by orbital phase
+      float keplerPhase = speed + 4.8 / pow(max(hr, 0.35), 1.15);
+      float cs = cos(keplerPhase);
+      float sn = sin(keplerPhase);
+      vec2 rotDir = mat2(cs, -sn, sn, cs) * unitDir;
 
-      // Ridged plasma embers (high-contrast bright ridges + dark troughs)
-      float ridge = 1.0 - abs(fHigh * 2.0 - 1.0);
-      float filament = clamp((fineTracks * 0.75 + (ridge * ridge) * 0.65) * 1.18, 0.0, 1.5);
+      // High radial frequency + low tangential frequency => long, razor-sharp concentric filaments
+      float fMacro = fbm6(vec2(hr * 5.2, 0.0) + rotDir * 1.85);
+      float fMicro = fbm6(vec2(hr * 18.5 + fMacro * 2.2, 0.0) + rotDir * 3.6);
+      float fGrain = fbm6(p.xz * 3.8 + rotDir * 6.0);
 
-      // Relativistic Doppler beaming: left approaching rim (+Z dot) shines blazing hot
+      // Sharp concentric orbital tracks with deep dark canyons between bright plasma rings
+      float rWarped = hr + (fMacro - 0.5) * 0.055;
+      float w1 = 0.5 + 0.5 * sin(rWarped * 44.0 - uTime * 1.2);
+      float w2 = 0.5 + 0.5 * cos(rWarped * 96.0 + fMicro * 4.2 + uTime * 1.8);
+      float w3 = 0.5 + 0.5 * sin(rWarped * 165.0 - fGrain * 5.0);
+
+      float sharpRings = pow(max(w1, 1e-4), 3.4) * 0.58 +
+                         pow(max(w2, 1e-4), 2.8) * 0.42 +
+                         pow(max(w3, 1e-4), 4.0) * 0.25;
+
+      // Ridged turbulence for fiery dust veins
+      float ridge = 1.0 - abs(fMicro * 2.0 - 1.0);
+      float streak = clamp((sharpRings * 0.82 + (ridge * ridge) * 0.58) * (0.45 + 0.85 * fMacro), 0.0, 1.6);
+
+      // Front bridge dark soot absorption channels (creates the dramatic dark veins in front of the sphere)
+      float frontBridge = smoothstep(0.0, 0.85, p.z) * (1.0 - wingAniso * 0.55);
+      float sootVein = smoothstep(0.18, 0.68, fMicro * 0.7 + w1 * 0.3);
+      streak *= mix(1.0, 0.22 + 0.95 * sootVein, frontBridge * 0.75);
+
+      // Relativistic Doppler beaming (left approaching side glows incandescent #FFFDF5)
       vec3 tangVel = normalize(vec3(p.z, 0.0, -p.x) + vec3(1e-5, 0.0, 0.0));
       float doppler = dot(tangVel, -rayDir);
-      float beam = pow(max(1.0 + 0.48 * doppler, 0.22), 2.1);
+      float beam = pow(max(1.0 + 0.50 * doppler, 0.24), 2.25);
 
-      float heat = (1.0 - smoothstep(R_IN, R_OUT * 0.88, hr));
-      float temp = clamp(heat * 0.68 + filament * 0.52 + doppler * 0.26 + uAudio * 0.22, 0.0, 1.45);
+      // Temperature & Singularity Gold color ramp
+      float coreHeat = 1.0 - smoothstep(R_IN, effectiveOut * 0.82, hr);
+      float temp = clamp(coreHeat * 0.66 + streak * 0.58 + doppler * 0.24 + uAudio * 0.24, 0.0, 1.5);
 
-      vec3 colDeep   = vec3(0.055, 0.025, 0.010); // Dark dust veins
-      vec3 colBronze = vec3(0.471, 0.208, 0.059); // #78350F
-      vec3 colAmber  = vec3(0.851, 0.467, 0.024); // #D97706
-      vec3 colGold   = vec3(0.961, 0.718, 0.310); // #F5B74F
-      vec3 colPhoton = vec3(1.000, 0.992, 0.961); // #FFFDF5
+      vec3 colSoot   = vec3(0.025, 0.012, 0.005); // Deep dark dust lane
+      vec3 colBronze = vec3(0.471, 0.208, 0.059); // #78350F Warm Bronze
+      vec3 colAmber  = vec3(0.851, 0.467, 0.024); // #D97706 Amber Core
+      vec3 colGold   = vec3(0.961, 0.718, 0.310); // #F5B74F Solar Gold
+      vec3 colPhoton = vec3(1.000, 0.992, 0.961); // #FFFDF5 Photon Ring
 
-      vec3 c = mix(colDeep, colBronze, smoothstep(0.05, 0.28, temp));
-      c = mix(c, colAmber, smoothstep(0.24, 0.56, temp));
-      c = mix(c, colGold, smoothstep(0.50, 0.88, temp));
-      c = mix(c, colPhoton, smoothstep(0.84, 1.24, temp));
-      c *= beam * voiceBoost * (isSharpPlane ? 1.55 : 0.85);
+      vec3 c = mix(colSoot, colBronze, smoothstep(0.04, 0.26, temp));
+      c = mix(c, colAmber, smoothstep(0.22, 0.54, temp));
+      c = mix(c, colGold, smoothstep(0.48, 0.84, temp));
+      c = mix(c, colPhoton, smoothstep(0.80, 1.22, temp));
 
-      float density = radialEnv * mix(0.22, 1.0, filament) * (isSharpPlane ? 0.92 : 1.0);
-      return vec4(c, clamp(density, 0.0, 0.95));
+      float wingBoost = 1.0 + wingAniso * 0.45;
+      c *= beam * voiceBoost * wingBoost * (isSharpPlane ? 1.68 : 0.82);
+
+      float alpha = radialEnv * mix(0.16, 0.98, clamp(streak, 0.0, 1.0)) * (isSharpPlane ? 0.94 : 1.0);
+      return vec4(c, clamp(alpha, 0.0, 0.96));
     }
 
     void main() {
       vec2 ndc = vUv * 2.0 - 1.0;
       float tanHalfFov = 0.41421356; // tan(radians(45.0) * 0.5)
 
-      vec3 ro = vec3(0.0, 0.0, 6.6);
+      vec3 ro = vec3(0.0, 0.0, 6.5);
       vec3 rd = normalize(vec3(ndc.x * uAspect * tanHalfFov, ndc.y * tanHalfFov, -1.0));
 
-      // Inverse of Rx(tiltX) * Rz(tiltZ) -> Rz(-tiltZ) * Rx(-tiltX)
+      // Inverse transform of group rotation
       ro = rotateZ(rotateX(ro, -uTilt.x), -uTilt.y);
       rd = normalize(rotateZ(rotateX(rd, -uTilt.x), -uTilt.y));
 
-      // Schwarzschild metric M = 0.195 => R_horizon ~ 0.44, r_ph = 0.585, Shadow ~ 1.01
       const float BH_M = 0.195;
       const float R_HORIZON = 0.44;
 
@@ -164,9 +186,9 @@ const BlackHoleRaymarchShader = {
       bool hitBH = false;
 
       float voiceBoost = 1.0 + uAudio * 0.85;
-      float speed = uTime * (0.45 + uAudio * 0.55);
+      float speed = uTime * (0.42 + uAudio * 0.55);
 
-      for (int i = 0; i < 88; i++) {
+      for (int i = 0; i < 94; i++) {
         float r = max(length(pos), 0.001);
         minR = min(minR, r);
 
@@ -174,11 +196,11 @@ const BlackHoleRaymarchShader = {
           hitBH = true;
           break;
         }
-        if (r > 12.0 && dot(pos, rd) > 0.0) {
+        if (r > 12.5 && dot(pos, rd) > 0.0) {
           break;
         }
 
-        // Exact equatorial plane-crossing sample (zero raymarch blur for upper/lower lensed arches)
+        // 1. Exact Sub-Pixel Equatorial Plane Intersection (zero vertical blur on rings & arches)
         if (i > 0 && ((prevPos.y > 0.0 && pos.y <= 0.0) || (prevPos.y < 0.0 && pos.y >= 0.0))) {
           float dy = abs(pos.y - prevPos.y) + 1e-6;
           float frac = clamp(abs(prevPos.y) / dy, 0.0, 1.0);
@@ -186,77 +208,83 @@ const BlackHoleRaymarchShader = {
           vec4 planeSample = evalAccretionDisk(hitP, rd, speed, voiceBoost, true);
           accCol += (1.0 - accAlpha) * planeSample.rgb * planeSample.a;
           accAlpha += (1.0 - accAlpha) * planeSample.a;
-          if (accAlpha > 0.99) break;
+          if (accAlpha > 0.992) break;
         }
 
-        // Thin micro-slab volumetric ember glow around y=0 (gives textured thickness to front bridge)
-        if (abs(pos.y) < 0.075 && r > 0.95 && r < 4.0 && accAlpha < 0.98) {
-          float dtSlab = clamp(min(r * 0.08, abs(pos.y) * 0.35 + 0.018), 0.015, 0.36);
-          float yn = pos.y / 0.036;
+        // 2. Ultra-thin volumetric ember haze on the equatorial plane (3D depth on front bridge)
+        if (abs(pos.y) < 0.058 && r > 0.96 && r < 4.4 && accAlpha < 0.98) {
+          float dtSlab = clamp(min(r * 0.075, abs(pos.y) * 0.34 + 0.015), 0.014, 0.34);
+          float yn = pos.y / 0.028;
           float vert = exp(-(yn * yn));
-          if (vert > 0.05) {
+          if (vert > 0.06) {
             vec4 volSample = evalAccretionDisk(pos, rd, speed, voiceBoost, false);
-            float volA = clamp(volSample.a * vert * dtSlab * 7.5, 0.0, 0.65);
+            float volA = clamp(volSample.a * vert * dtSlab * 6.8, 0.0, 0.58);
             accCol += (1.0 - accAlpha) * volSample.rgb * volA;
             accAlpha += (1.0 - accAlpha) * volA;
           }
         }
 
-        // Exact Schwarzschild geodesic ray deflection
+        // 3. Schwarzschild geodesic photon deflection
         vec3 h = cross(pos, rd);
         float h2 = dot(h, h);
         vec3 accel = -3.0 * BH_M * h2 * pos / pow(max(r, 0.32), 5.0);
-        float dt = clamp(min(r * 0.08, abs(pos.y) * 0.35 + 0.018), 0.015, 0.36);
+        float dt = clamp(min(r * 0.075, abs(pos.y) * 0.34 + 0.015), 0.014, 0.34);
 
         prevPos = pos;
         rd = normalize(rd + accel * dt);
         pos += rd * dt;
       }
 
-      // Deep Space Nebula + corner subtle cosmic sepia wisps + crisp pinpoint stars
+      // Deep Space Void & corner sepia dust wisps + gravitationally lensed stars
       float radialDist = length(vec2(ndc.x * uAspect, ndc.y));
-      vec3 bgVoid = vec3(0.010, 0.010, 0.016); // #030305
-      vec3 bgNeb0 = vec3(0.042, 0.028, 0.016); // #0D0905
-      vec3 bgNeb1 = vec3(0.075, 0.052, 0.028); // #17110A
-      vec3 bgCol = mix(bgNeb1, bgNeb0, smoothstep(0.0, 0.62, radialDist));
-      bgCol = mix(bgCol, bgVoid, smoothstep(0.55, 1.35, radialDist));
+      vec3 bgVoid = vec3(0.008, 0.008, 0.012); // #030305
+      vec3 bgNeb0 = vec3(0.032, 0.022, 0.012); // #0D0905
+      vec3 bgNeb1 = vec3(0.058, 0.040, 0.020); // #17110A
+      vec3 bgCol = mix(bgNeb1, bgNeb0, smoothstep(0.0, 0.65, radialDist));
+      bgCol = mix(bgCol, bgVoid, smoothstep(0.50, 1.30, radialDist));
 
       if (!hitBH) {
-        // Subtle outer dust nebulae like Deep Space reference
-        float dust = fbm5(ndc * vec2(uAspect, 1.0) * 1.35 + vec2(1.4, -0.8));
-        float cornerMask = smoothstep(0.52, 1.25, radialDist);
-        bgCol += vec3(0.471, 0.250, 0.105) * pow(max(dust, 0.0), 2.4) * cornerMask * 0.28;
+        // Warm cosmic dust clouds in peripheral corners (matches Image 2)
+        vec2 dustUv = ndc * vec2(uAspect, 1.0);
+        float dustCloud = fbm6(dustUv * 1.45 + vec2(2.1, -1.3));
+        float dustDetail = fbm6(dustUv * 3.4 - vec2(1.2, 0.7));
+        float cornerMask = smoothstep(0.42, 1.15, radialDist);
+        bgCol += vec3(0.52, 0.30, 0.13) * pow(max(dustCloud * 0.75 + dustDetail * 0.35, 1e-4), 2.6) * cornerMask * 0.34;
 
-        // Sharp pinpoint stars deflected slightly by gravity
-        vec3 sg = rd * 52.0;
-        vec3 cell = floor(sg);
-        vec3 f = fract(sg) - 0.5;
-        float rnd = hash31(cell);
-        vec3 j = (vec3(hash31(cell + 1.3), hash31(cell + 2.7), hash31(cell + 5.1)) - 0.5) * 0.55;
-        float starDist = length(f - j);
-        float star = (1.0 - smoothstep(0.008, 0.052, starDist)) * step(0.958, rnd);
-        float twinkle = 0.6 + 0.4 * sin(uTime * 1.9 + rnd * 45.0);
-        bgCol += mix(vec3(0.961, 0.718, 0.310), vec3(1.000, 0.992, 0.961), fract(rnd * 19.0)) * star * twinkle * 0.85;
+        // Crisp pinpoint stars (two density tiers)
+        vec3 sg1 = rd * 56.0;
+        vec3 c1 = floor(sg1);
+        vec3 f1 = fract(sg1) - 0.5;
+        float r1 = hash31(c1);
+        vec3 j1 = (vec3(hash31(c1 + 1.3), hash31(c1 + 2.7), hash31(c1 + 5.1)) - 0.5) * 0.56;
+        float s1 = (1.0 - smoothstep(0.006, 0.046, length(f1 - j1))) * step(0.954, r1);
+        float tw1 = 0.65 + 0.35 * sin(uTime * 1.8 + r1 * 48.0);
+        bgCol += mix(vec3(0.961, 0.718, 0.310), vec3(1.000, 0.992, 0.961), fract(r1 * 19.0)) * s1 * tw1 * 0.92;
       } else {
-        bgCol = vec3(0.0); // Pure #000000 Event Horizon shadow
+        // Strictly #000000 inside Event Horizon shadow
+        bgCol = vec3(0.0);
       }
 
-      // Razor-sharp Photon Ring hugging critical orbit ONLY outside the pure #000000 Event Horizon
+      // Needle-sharp primary + secondary Photon Ring ONLY outside the #000000 Event Horizon
       float razorPhoton = 0.0;
+      float subPhotonRing = 0.0;
       float softCorona = 0.0;
       if (!hitBH) {
-        float drPh = max(minR - 0.582, 0.0) * 46.0;
-        razorPhoton = exp(-(drPh * drPh)) * (2.15 + uAudio * 0.9);
-        softCorona = exp(-max(minR - 0.56, 0.0) * 8.0) * 0.34;
+        float d1 = (minR - 0.584) * 68.0;
+        razorPhoton = exp(-(d1 * d1)) * (2.45 + uAudio * 0.95);
+        float d2 = (minR - 0.628) * 42.0;
+        subPhotonRing = exp(-(d2 * d2)) * 0.85;
+        softCorona = exp(-max(minR - 0.575, 0.0) * 10.5) * 0.28;
       }
       vec3 coronaCol = vec3(1.000, 0.992, 0.961) * razorPhoton +
-                       vec3(0.961, 0.718, 0.310) * softCorona * (1.0 + uAudio * 0.45);
+                       vec3(0.961, 0.718, 0.310) * (subPhotonRing + softCorona * (1.0 + uAudio * 0.45));
 
-      vec3 hdrCol = bgCol * (1.0 - accAlpha) + accCol + (1.0 - accAlpha * 0.45) * coronaCol;
+      vec3 hdrCol = bgCol * (1.0 - accAlpha) + accCol + (1.0 - accAlpha * 0.35) * coronaCol;
 
-      // Crisp ACES filmic tone-mapping preserving high filament contrast & peak photon highlights
+      // High-contrast ACES filmic tone-mapping + subtle crisp S-curve
       vec3 mapped = (hdrCol * (2.51 * hdrCol + 0.03)) / (hdrCol * (2.43 * hdrCol + 0.59) + 0.14);
       mapped = clamp(mapped, 0.0, 1.0);
+      mapped = mapped * (0.94 + 0.06 * mapped); // Deeper blacks & crisper gold filament separation
 
       gl_FragColor = vec4(mapped, 1.0);
     }
@@ -280,7 +308,7 @@ const OrbitalNodesShader = {
       gl_Position = projectionMatrix * mvPosition;
       float twinkle = 0.55 + 0.45 * sin(uTime * 1.9 + aPhase);
       vAlpha = twinkle * (0.55 + uAudio * 0.45);
-      gl_PointSize = aScale * uPixelRatio * (1.0 + uAudio * 0.35) * (20.0 / max(-mvPosition.z, 1.5));
+      gl_PointSize = aScale * uPixelRatio * (1.0 + uAudio * 0.35) * (18.0 / max(-mvPosition.z, 1.5));
     }
   `,
   fragmentShader: /* glsl */ `
@@ -291,10 +319,10 @@ const OrbitalNodesShader = {
       vec2 uv = gl_PointCoord - 0.5;
       float d2 = dot(uv, uv);
       if (d2 > 0.25) discard;
-      float core = exp(-d2 * 48.0);
-      float halo = exp(-d2 * 14.0) * 0.35;
+      float core = exp(-d2 * 52.0);
+      float halo = exp(-d2 * 15.0) * 0.32;
       vec3 col = mix(vec3(0.961, 0.718, 0.310), vec3(1.000, 0.992, 0.961), core);
-      gl_FragColor = vec4(col, (core + halo) * vAlpha * 0.85);
+      gl_FragColor = vec4(col, (core + halo) * vAlpha * 0.82);
     }
   `,
 };
@@ -323,18 +351,18 @@ function BlackHoleCore({ audioLevel, isListening, getAudioEnergy }: BlackHolePro
   );
 
   const { positions, scales, phases } = useMemo(() => {
-    const count = 520;
+    const count = 480;
     const pos = new Float32Array(count * 3);
     const sc = new Float32Array(count);
     const ph = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      const radius = 2.0 + Math.pow(Math.random(), 0.7) * 4.2;
+      const radius = 2.05 + Math.pow(Math.random(), 0.7) * 4.2;
       const theta = Math.random() * Math.PI * 2;
-      const spreadY = (Math.random() - 0.5) * 0.22;
+      const spreadY = (Math.random() - 0.5) * 0.18;
       pos[i * 3] = Math.cos(theta) * radius;
       pos[i * 3 + 1] = spreadY;
       pos[i * 3 + 2] = Math.sin(theta) * radius;
-      sc[i] = 0.42 + Math.random() * 0.78;
+      sc[i] = 0.4 + Math.random() * 0.75;
       ph[i] = Math.random() * Math.PI * 2;
     }
     return { positions: pos, scales: sc, phases: ph };
@@ -353,8 +381,8 @@ function BlackHoleCore({ audioLevel, isListening, getAudioEnergy }: BlackHolePro
     particleUniforms.uAudio.value = rayUniforms.uAudio.value;
     particleUniforms.uPixelRatio.value = state.gl.getPixelRatio();
 
-    const targetRotX = BASE_TILT_X + state.pointer.y * 0.12;
-    const targetRotZ = BASE_TILT_Z - state.pointer.x * 0.10;
+    const targetRotX = BASE_TILT_X + state.pointer.y * 0.10;
+    const targetRotZ = BASE_TILT_Z - state.pointer.x * 0.09;
 
     if (groupRef.current) {
       groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotX, 0.06);
@@ -363,7 +391,7 @@ function BlackHoleCore({ audioLevel, isListening, getAudioEnergy }: BlackHolePro
     }
 
     if (neuralPointsRef.current) {
-      neuralPointsRef.current.rotation.y -= clampedDelta * (0.16 + targetAudio * 0.35);
+      neuralPointsRef.current.rotation.y -= clampedDelta * (0.15 + targetAudio * 0.35);
     }
   });
 
@@ -383,7 +411,7 @@ function BlackHoleCore({ audioLevel, isListening, getAudioEnergy }: BlackHolePro
 
       <group ref={groupRef} rotation={[BASE_TILT_X, 0, BASE_TILT_Z]}>
         <mesh renderOrder={0}>
-          <sphereGeometry args={[1.005, 48, 48]} />
+          <sphereGeometry args={[1.01, 48, 48]} />
           <meshBasicMaterial colorWrite={false} depthWrite />
         </mesh>
 

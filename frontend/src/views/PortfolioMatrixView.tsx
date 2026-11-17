@@ -52,8 +52,8 @@ export const PortfolioMatrixView: React.FC<PortfolioMatrixViewProps> = ({
   const filteredAssets = assets.filter((a) => groupFilter === 'ALL' || a.group === groupFilter);
 
   return (
-    <section className="pointer-events-auto mx-auto max-w-[1380px] space-y-6 px-5 pb-16 pt-[96px] md:px-[36px]">
-      <div className="space-y-5 border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px]">
+    <section className="pointer-events-auto mx-auto max-w-[1440px] space-y-6 px-5 pb-16 pt-[88px] md:px-[36px] xl:pl-[84px]">
+      <div className="space-y-5 rounded-xl border border-hud-border bg-hud-surface p-6 shadow-hud backdrop-blur-[16px]">
         <div className="flex flex-col justify-between gap-4 border-b border-hud-border pb-4 md:flex-row md:items-center">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-accretion-gold">
